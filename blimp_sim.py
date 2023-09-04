@@ -26,13 +26,20 @@ D = np.zeros((3, 4))
 
 P = np.identity(3) * 10
 Q = np.identity(3) * 10
-R = np.matrix([1]) * 0
+R = np.matrix([1]) * 10
 
-TIME_STOP = 200
+TIME_STOP = 250
 time_vec = np.arange(0, TIME_STOP, dT)
 
 N = 10
-blimp_controller = BlimpMPCCasadi(A, B, C, D, P, Q, R, N)
+blimp_controller = BlimpMPCCasadi(A_dis,
+                                  B_dis,
+                                  C,
+                                  D,
+                                  P,
+                                  Q,
+                                  R,
+                                  N)
 
 # Initial state 
 
@@ -56,10 +63,10 @@ y = C @ x
 
 ref_idx = 0
 reference_points = [
-                    np.matrix([0, 0, 0]).T,
-                    np.matrix([0, 0, 0]).T,
-                    np.matrix([0, 0, 0]).T,
-                    np.matrix([0, 0, 0]).T
+                    np.matrix([5, 5, 5]).T,
+                    np.matrix([5, -5, -5]).T,
+                    np.matrix([-5, -5, 2.5]).T,
+                    np.matrix([-5, 5, -2.5]).T
                     ]
 NUM_REF_PTS = 4
 
@@ -87,9 +94,9 @@ xmin = np.matrix([[-np.inf],
                   [-np.inf],
                   [-np.inf],
                   [-np.inf],
-                  [-30],   # x
-                  [-30],   # y
-                  [-30],   # z
+                  [-10],   # x
+                  [-10],   # y
+                  [-10],   # z
                   [-np.inf],
                   [-np.inf],
                   [-np.inf]
@@ -101,9 +108,9 @@ xmax = np.matrix([[np.inf],
                   [np.inf],
                   [np.inf],
                   [np.inf],
-                  [30],   # x
-                  [30],   # y
-                  [30],   # z
+                  [10],   # x
+                  [10],   # y
+                  [10],   # z
                   [np.inf],
                   [np.inf],
                   [np.inf]
@@ -132,7 +139,7 @@ ax.set_xlabel('y0')
 ax.set_ylabel('y1')
 ax.set_zlabel('y2')
 
-i = 0
+# i = 0
 
 for t in time_vec:
     
@@ -148,6 +155,9 @@ for t in time_vec:
     ax.scatter(ref0_vals, ref1_vals, ref2_vals, color='r', s=100)
     ax.scatter(y0, y1, y2, color='m', s=100)
     ax.scatter(y[0], y[1], y[2], color='c', s=75)
+    ax.set_xlabel("y0")
+    ax.set_ylabel('y1')
+    ax.set_zlabel('y2')
     plt.draw()
     plt.pause(0.02)
 
@@ -180,13 +190,13 @@ for t in time_vec:
     ref1_vals.append(float(reference_points[ref_idx][1]))
     ref2_vals.append(float(reference_points[ref_idx][2]))
 
-    #print("Old outputs: " + str(y.T))
-    #print("Input: " + str(u.T))
+    # print("Old outputs: " + str(y.T))
+    # print("Input: " + str(u.T))
     
     x = A_dis @ x + B_dis @ u
     y = C @ x + D @ u
 
-    #print("New outputs: " + str(y.T))
+    # print("New outputs: " + str(y.T))
 
     error = distance_to_goal(y, reference_points[ref_idx])
     error_vals.append(error)
@@ -197,7 +207,9 @@ for t in time_vec:
         if settling_timer == 0:
             settling_timer = TIMESTEPS_TO_SETTLE
             ref_idx = (ref_idx + 1) % NUM_REF_PTS
-            print("UPDATING REFERENCE ===================================")
+            print()
+            print("UPDATING REFERENCE ==========================================================================")
+            print("UPDATING REFERENCE ==========================================================================")
     else:
         settling_timer = TIMESTEPS_TO_SETTLE
 
