@@ -1,5 +1,4 @@
-from CasadiExampleMPC import CasadiExampleMPC
-from ExampleMPC import ExampleMPC
+from CasadiOriginMPC import CasadiOriginMPC
 from ModelPredictiveController import ModelPredictiveController
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +8,7 @@ print("MPC SYSTEM")
 print()
 
 A, B, C, D, P, Q, R = ModelPredictiveController.load_dynamics('dynamics')
-controller = CasadiExampleMPC('dynamics', 3)
+controller = CasadiOriginMPC('dynamics', 3)
 
 x = np.matrix([[-2],
                [1]])

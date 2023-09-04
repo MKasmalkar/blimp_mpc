@@ -1,4 +1,4 @@
-from CasadiTrajTracker import CasadiTrajTracker
+from CasadiTrackingMPC import CasadiTrackingMPC
 from ModelPredictiveController import ModelPredictiveController
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +8,7 @@ print("MPC SYSTEM")
 print()
 
 A, B, C, D, P, Q, R = ModelPredictiveController.load_dynamics('dynamics')
-controller = CasadiTrajTracker('dynamics', 3)
+controller = CasadiTrackingMPC('dynamics', 3)
 
 x = np.matrix([[10],
                [-10]])

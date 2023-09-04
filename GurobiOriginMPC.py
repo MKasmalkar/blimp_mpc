@@ -4,7 +4,7 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 
-class ExampleMPC(ModelPredictiveController):
+class GurobiOriginMPC(ModelPredictiveController):
 
     def __init__(self, base_dir, N):
         super().__init__(base_dir)

@@ -3,7 +3,7 @@ import scipy
 import matplotlib.pyplot as plt
 from rta.blimp import Blimp
 import random
-from BlimpMPC import BlimpMPCCasadi
+from BlimpTrackingMPC import BlimpTrackingMPC
 
 dT = 0.25
 
@@ -32,14 +32,14 @@ TIME_STOP = 250
 time_vec = np.arange(0, TIME_STOP, dT)
 
 N = 10
-blimp_controller = BlimpMPCCasadi(A_dis,
-                                  B_dis,
-                                  C,
-                                  D,
-                                  P,
-                                  Q,
-                                  R,
-                                  N)
+blimp_controller = BlimpTrackingMPC(A_dis,
+                                    B_dis,
+                                    C,
+                                    D,
+                                    P,
+                                    Q,
+                                    R,
+                                    N)
 
 # Initial state 
 
