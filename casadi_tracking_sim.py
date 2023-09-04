@@ -50,24 +50,26 @@ try:
 
     print("Time: " + str(time.time() - start_time))
 
-    plt.subplot(3, 1, 1)
-    plt.plot(x0, x1)
-    plt.xlabel('State x0')
-    plt.ylabel('State x1')
+    # plt.subplot(3, 1, 1)
+    # plt.plot(x0, x1)
+    # plt.xlabel('State x0')
+    # plt.ylabel('State x1')
 
-    plt.subplot(3, 1, 2)
+    # plt.subplot(2, 1, 1)
     plt.plot(time_vec, x0)
     plt.plot(time_vec, x1)
+    plt.plot(time_vec, u_history)
     plt.plot(time_vec, y_ref)
     plt.xlabel('Time')
-    plt.legend(['x0', 'x1', 'y ref'])
+    plt.legend(['x0', 'x1', 'u', 'x0 ref'])
+    plt.title("Tracking Controller")
 
-    plt.subplot(3, 1, 3)
-    plt.plot(time_vec, u_history)
-    plt.xlabel('Time')
-    plt.ylabel('Control input u')
+    # plt.subplot(2, 1, 2)
+    # plt.plot(time_vec, u_history)
+    # plt.xlabel('Time')
+    # plt.ylabel('Control input u')
 
-    plt.subplots_adjust(hspace=0.4)
+    # plt.subplots_adjust(hspace=0.4)
 
     plt.show()
 

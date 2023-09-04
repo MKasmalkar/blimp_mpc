@@ -45,10 +45,19 @@ try:
     print("Time: " + str(time.time() - start_time))
 
     plt.subplot(2, 1, 1)
+    plt.title('Origin Regulating Controller')
+
     plt.plot(x0, x1)
+    plt.xlabel('x0')
+    plt.ylabel('x1')
+
     plt.subplot(2, 1, 2)
     plt.plot(time_vec, x0)
     plt.plot(time_vec, x1)
+    plt.xlabel('Time')
+    plt.ylabel('State variable')
+    plt.legend(['x0', 'x1'])
+    plt.subplots_adjust(hspace=0.75)
     plt.show()
 
 except KeyboardInterrupt:

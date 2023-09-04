@@ -141,6 +141,8 @@ ax.set_zlabel('y2')
 
 # i = 0
 
+# go = False
+
 for t in time_vec:
     
     print()
@@ -149,6 +151,10 @@ for t in time_vec:
     y0_vals.append(float(y[0]))
     y1_vals.append(float(y[1]))
     y2_vals.append(float(y[2]))
+
+    ref0_vals.append(float(reference_points[ref_idx][0]))
+    ref1_vals.append(float(reference_points[ref_idx][1]))
+    ref2_vals.append(float(reference_points[ref_idx][2]))
 
     ax.cla()
     ax.scatter(y0_vals, y1_vals, y2_vals, color='b')
@@ -159,7 +165,11 @@ for t in time_vec:
     ax.set_ylabel('y1')
     ax.set_zlabel('y2')
     plt.draw()
-    plt.pause(0.02)
+    plt.pause(0.001)
+    
+    # if not go:
+    #     input("Press enter to start...")
+    #     go = True
 
     u = blimp_controller.get_tracking_ctrl(x,
                                            reference_points[ref_idx],
@@ -185,10 +195,6 @@ for t in time_vec:
     u1_vals.append(float(u[1]))
     u2_vals.append(float(u[2]))
     u3_vals.append(float(u[3]))
-
-    ref0_vals.append(float(reference_points[ref_idx][0]))
-    ref1_vals.append(float(reference_points[ref_idx][1]))
-    ref2_vals.append(float(reference_points[ref_idx][2]))
 
     # print("Old outputs: " + str(y.T))
     # print("Input: " + str(u.T))
