@@ -2,7 +2,12 @@ import numpy as np
 import scipy
 from rta.blimp import Blimp
 from BlimpTrackingMPC import BlimpTrackingMPC
-import os
+import time
+import csv
+import sys
+
+if len(sys.argv) < 3:
+    print("Please run with simulation time as first argument and output data file as second")
 
 dT = 0.25
 
@@ -27,7 +32,9 @@ P = np.identity(3) * 10
 Q = np.identity(3) * 10
 R = np.matrix([1]) * 10
 
-TIME_STOP = 250
+out_file = sys.argv[2]
+
+TIME_STOP = int(sys.argv[1])
 time_vec = np.arange(0, TIME_STOP, dT)
 
 N = 10
@@ -134,7 +141,11 @@ settling_timer = TIMESTEPS_TO_SETTLE
 
 # go = False
 
+times = []
+
 for t in time_vec:
+
+    print()
     print("Time t=" + str(t))
 
     y0_vals.append(float(y[0].item()))
@@ -145,37 +156,63 @@ for t in time_vec:
     ref1_vals.append(float(reference_points[ref_idx][1].item()))
     ref2_vals.append(float(reference_points[ref_idx][2].item()))
 
+    start_time = time.time()
     u = blimp_controller.get_tracking_ctrl(x,
                                            reference_points[ref_idx],
                                            xmin,
                                            xmax,
                                            umin,
                                            umax)
+    times.append(time.time() - start_time)
 
     u0_vals.append(float(u[0].item()))
     u1_vals.append(float(u[1].item()))
     u2_vals.append(float(u[2].item()))
     u3_vals.append(float(u[3].item()))
 
-    print("Old outputs: " + str(y.T))
-    print("Input: " + str(u.T))
+    #print("Old outputs: " + str(y.T))
+    #print("Input: " + str(u.T))
     
     x = A_dis @ x + B_dis @ u
     y = C @ x + D @ u
 
-    print("New outputs: " + str(y.T))
+    #print("New outputs: " + str(y.T))
 
     error = distance_to_goal(y, reference_points[ref_idx])
     error_vals.append(error)
-    print("Error: " + str(error))
+    #print("Error: " + str(error))
 
     if error < DEADBAND:
         settling_timer -= 1
         if settling_timer == 0:
             settling_timer = TIMESTEPS_TO_SETTLE
             ref_idx = (ref_idx + 1) % NUM_REF_PTS
-            print()
-            print("UPDATING REFERENCE ==========================================================================")
-            print("UPDATING REFERENCE ==========================================================================")
+            #print()
+            #print("UPDATING REFERENCE ==========================================================================")
+            #print("UPDATING REFERENCE ==========================================================================")
     else:
         settling_timer = TIMESTEPS_TO_SETTLE
+
+with open('outputs/' + out_file, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile, delimiter=',')
+
+
+    print("Writing to CSV...")
+    writer.writerow(['Time',
+                     'X', 'Y', 'Z',
+                     'Reference X', 'Reference Y', 'Reference Z',
+                     'Error',
+                     'u0', 'u1', 'u2', 'u3',
+                     'deltaT'])
+    
+    for i in range(len(time_vec)):
+        #print("Row " + str(i) + " out of " + str(len(time_vec)))
+        writer.writerow([time_vec[i],
+                         y0_vals[i], y1_vals[i], y2_vals[i],
+                         ref0_vals[i], ref1_vals[i], ref2_vals[i],
+                         error_vals[i],
+                         u0_vals[i], u1_vals[i], u2_vals[i], u3_vals[i],
+                         times[i]])
+        
+    print("Done writing to CSV!")
+        
