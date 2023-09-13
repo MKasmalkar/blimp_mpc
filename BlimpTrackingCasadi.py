@@ -3,7 +3,7 @@ from ModelPredictiveController import ModelPredictiveController
 import casadi as cs
 import numpy as np
 
-class BlimpTrackingMPC(ModelPredictiveController):
+class BlimpTrackingCasadi(ModelPredictiveController):
 
     def __init__(self, base_dir, N):
         super().__init__(base_dir)

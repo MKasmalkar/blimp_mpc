@@ -1,7 +1,7 @@
 import numpy as np
 import scipy
 from rta.blimp import Blimp
-from BlimpTrackingMPC import BlimpTrackingMPC
+from BlimpTrackingGurobi import BlimpTrackingGurobi
 import time
 import csv
 import sys
@@ -30,7 +30,7 @@ D = np.zeros((3, 4))
 
 P = np.identity(3) * 10
 Q = np.identity(3) * 10
-R = np.matrix([1]) * 10
+R = np.identity(4) * 10
 
 out_file = sys.argv[2]
 
@@ -38,14 +38,14 @@ TIME_STOP = int(sys.argv[1])
 time_vec = np.arange(0, TIME_STOP, dT)
 
 N = 10
-blimp_controller = BlimpTrackingMPC(A_dis,
-                                    B_dis,
-                                    C,
-                                    D,
-                                    P,
-                                    Q,
-                                    R,
-                                    N)
+blimp_controller = BlimpTrackingGurobi(A_dis,
+                                       B_dis,
+                                       C,
+                                       D,
+                                       P,
+                                       Q,
+                                       R,
+                                       N)
 
 # Initial state 
 

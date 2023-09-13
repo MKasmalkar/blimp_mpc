@@ -43,6 +43,8 @@ ylabel('y')
 zlabel('z')
 hold on
 scatter3(refX_comp, refY_comp, refZ_comp, 50, 'r', 'filled')
+title("Blimp path")
+subtitle("Red markers indicate waypoints")
 
 subplot(3, 3, 7:9)
 plot(time_comp, deltaT_comp)
