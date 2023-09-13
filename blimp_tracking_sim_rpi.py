@@ -4,8 +4,6 @@ from rta.blimp import Blimp
 from BlimpTrackingMPC import BlimpTrackingMPC
 import os
 
-clear = lambda: os.system('clear')
-
 dT = 0.25
 
 my_blimp = Blimp()
@@ -137,17 +135,15 @@ settling_timer = TIMESTEPS_TO_SETTLE
 # go = False
 
 for t in time_vec:
-    
-    clear()
     print("Time t=" + str(t))
 
-    y0_vals.append(float(y[0]))
-    y1_vals.append(float(y[1]))
-    y2_vals.append(float(y[2]))
+    y0_vals.append(float(y[0].item()))
+    y1_vals.append(float(y[1].item()))
+    y2_vals.append(float(y[2].item()))
 
-    ref0_vals.append(float(reference_points[ref_idx][0]))
-    ref1_vals.append(float(reference_points[ref_idx][1]))
-    ref2_vals.append(float(reference_points[ref_idx][2]))
+    ref0_vals.append(float(reference_points[ref_idx][0].item()))
+    ref1_vals.append(float(reference_points[ref_idx][1].item()))
+    ref2_vals.append(float(reference_points[ref_idx][2].item()))
 
     u = blimp_controller.get_tracking_ctrl(x,
                                            reference_points[ref_idx],
@@ -156,10 +152,10 @@ for t in time_vec:
                                            umin,
                                            umax)
 
-    u0_vals.append(float(u[0]))
-    u1_vals.append(float(u[1]))
-    u2_vals.append(float(u[2]))
-    u3_vals.append(float(u[3]))
+    u0_vals.append(float(u[0].item()))
+    u1_vals.append(float(u[1].item()))
+    u2_vals.append(float(u[2].item()))
+    u3_vals.append(float(u[3].item()))
 
     print("Old outputs: " + str(y.T))
     print("Input: " + str(u.T))
