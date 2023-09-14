@@ -95,26 +95,26 @@ y0 = 0
 y1 = 0
 y2 = 0
 
-x = np.matrix([[0],
-               [0],
-               [0],
-               [0],
-               [0],
-               [0],
-               [y0],   # x
-               [y1],   # y
-               [y2],   # z
-               [0],
-               [0],
-               [0],])
+x = np.array([[0],
+              [0],
+              [0],
+              [0],
+              [0],
+              [0],
+              [y0],   # x
+              [y1],   # y
+              [y2],   # z
+              [0],
+              [0],
+              [0],])
 y = C @ x
 
 ref_idx = 0
 reference_points = [
-                    np.matrix([5, 5, 5]).T,
-                    np.matrix([5, -5, -5]).T,
-                    np.matrix([-5, -5, 2.5]).T,
-                    np.matrix([-5, 5, -2.5]).T
+                    np.array([5, 5, 5]),
+                    np.array([5, -5, -5]),
+                    np.array([-5, -5, 2.5]),
+                    np.array([-5, 5, -2.5])
                     ]
 NUM_REF_PTS = 4
 
@@ -173,8 +173,8 @@ for t in time_vec:
     #print("Old outputs: " + str(y.T))
     #print("Input: " + str(u.T))
     
-    x = A_dis @ x + B_dis @ u
-    y = C @ x + D @ u
+    x = np.asarray(A_dis @ x + B_dis @ u)
+    y = np.asarray(C @ x + D @ u)
 
     #print("New outputs: " + str(y.T))
 

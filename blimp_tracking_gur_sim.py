@@ -89,26 +89,26 @@ y0 = 0
 y1 = 0
 y2 = 0
 
-x = np.matrix([[0],
-               [0],
-               [0],
-               [0],
-               [0],
-               [0],
-               [y0],   # x
-               [y1],   # y
-               [y2],   # z
-               [0],
-               [0],
-               [0],])
+x = np.array([[0],
+              [0],
+              [0],
+              [0],
+              [0],
+              [0],
+              [y0],   # x
+              [y1],   # y
+              [y2],   # z
+              [0],
+              [0],
+              [0],])
 y = C @ x
 
 ref_idx = 0
 reference_points = [
-                    np.matrix([5, 5, 5]).T,
-                    np.matrix([5, -5, -5]).T,
-                    np.matrix([-5, -5, 2.5]).T,
-                    np.matrix([-5, 5, -2.5]).T
+                    np.array([5, 5, 5]),
+                    np.array([5, -5, -5]),
+                    np.array([-5, -5, 2.5]),
+                    np.array([-5, 5, -2.5])
                     ]
 NUM_REF_PTS = 4
 
@@ -171,25 +171,8 @@ for t in time_vec:
     plt.draw()
     plt.pause(0.001)
     
-    # if not go:
-    #     input("Press enter to start...")
-    #     go = True
-
     u = blimp_controller.get_tracking_ctrl(x,
                                            reference_points[ref_idx])
-    
-    # if i < len(time_vec) / 2:
-    #     u = np.matrix([[-0.005],
-    #                 [-0.005],
-    #                 [-0.005],
-    #                 [0]])
-    # else:
-    #     u = np.matrix([[0.005],
-    #                 [0.005],
-    #                 [0.005],
-    #                 [0]])
-
-    # i += 1
 
     u0_vals.append(float(u[0]))
     u1_vals.append(float(u[1]))
@@ -199,8 +182,8 @@ for t in time_vec:
     # print("Old outputs: " + str(y.T))
     # print("Input: " + str(u.T))
     
-    x = A_dis @ x + B_dis @ u
-    y = C @ x + D @ u
+    x = np.asarray(A_dis @ x + B_dis @ u)
+    y = np.asarray(C @ x + D @ u)
 
     # print("New outputs: " + str(y.T))
 

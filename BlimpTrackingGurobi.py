@@ -49,15 +49,20 @@ class BlimpTrackingGurobi(ModelPredictiveController):
         self.u = self.m.addMVar(shape=(self.N, self.num_inputs),
                         lb=umin.T, ub=umax.T, name='u')
 
-        self.m.addConstr(self.x[0, :] == 0, name='ic')
+        self.ic_constraint = self.m.addConstr(self.x[0, :] == np.zeros((1, 12)).flatten(), name='ic')
 
         for k in range(self.N):
             self.m.addConstr(self.y[k, :] == self.C @ self.x[k, :])
             self.m.addConstr(self.x[k+1, :] == self.A @ self.x[k, :] + self.B @ self.u[k, :])
 
+        self.error_constraints = []
         for k in range(self.N):
-            self.m.addConstr(self.z[k, :] == self.y[k, :],
-                                name='error' + str(k))
+            self.error_constraints.append(
+                # z = error
+                # z = y - reference
+                # => y - z = reference
+                self.m.addConstr(self.y[k, :] - self.z[k, :] == np.zeros((1, self.num_outputs)).flatten(),
+                                 name='error' + str(k)))
 
         # terminal cost
         obj1 = self.z[self.N, :] @ self.P @ self.z[self.N, :]
@@ -102,17 +107,10 @@ class BlimpTrackingGurobi(ModelPredictiveController):
 
         self.start_timer()
 
-        for c in self.m.getConstrs():
-            if c.ConstrName.startswith('ic') or c.ConstrName.startswith('error'):
-                self.m.remove(self.m.getConstrByName(c.ConstrName))
-            
-        self.m.addConstr(self.x[0, :] == current_state.T, name='ic')
-
-        yr = reference.T
+        self.ic_constraint.rhs = current_state.flatten()
 
         for k in range(self.N):
-            self.m.addConstr(self.z[k, :] == self.y[k, :] - yr,
-                                name='error' + str(k))
+            self.error_constraints[k].rhs = reference
         
         self.m.optimize()
 
