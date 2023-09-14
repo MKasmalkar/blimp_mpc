@@ -28,7 +28,7 @@ P = np.identity(3) * 10
 Q = np.identity(3) * 10
 R = np.identity(4) * 10
 
-TIME_STOP = 250
+TIME_STOP = 20
 time_vec = np.arange(0, TIME_STOP, dT)
 
 N = 10
@@ -219,6 +219,16 @@ for t in time_vec:
     else:
         settling_timer = TIMESTEPS_TO_SETTLE
 
+plt.figure()
+
+times_leg = []
+for key in blimp_controller.times.keys():
+    plt.plot(time_vec, blimp_controller.times[key])
+    times_leg.append(key)
+
+plt.legend(times_leg)
+plt.xlabel('Time step')
+plt.ylabel('delta T')
 plt.show(block=True)
 
 # fig2 = plt.figure()
