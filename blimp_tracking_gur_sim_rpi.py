@@ -37,6 +37,44 @@ out_file = sys.argv[2]
 TIME_STOP = int(sys.argv[1])
 time_vec = np.arange(0, TIME_STOP, dT)
 
+xmin = np.matrix([[-np.inf],
+                  [-np.inf],
+                  [-np.inf],
+                  [-np.inf],
+                  [-np.inf],
+                  [-np.inf],
+                  [-10],   # x
+                  [-10],   # y
+                  [-10],   # z
+                  [-np.inf],
+                  [-np.inf],
+                  [-np.inf]
+                  ])
+
+xmax = np.matrix([[np.inf],
+                  [np.inf],
+                  [np.inf],
+                  [np.inf],
+                  [np.inf],
+                  [np.inf],
+                  [10],   # x
+                  [10],   # y
+                  [10],   # z
+                  [np.inf],
+                  [np.inf],
+                  [np.inf]
+                  ])
+
+umin = np.matrix([[-0.005],
+                  [-0.005],
+                  [-0.005],
+                  [-np.inf]])
+
+umax = np.matrix([[0.005],
+                  [0.005],
+                  [0.005],
+                  [np.inf]])
+
 N = 10
 blimp_controller = BlimpTrackingGurobi(A_dis,
                                        B_dis,
@@ -45,7 +83,11 @@ blimp_controller = BlimpTrackingGurobi(A_dis,
                                        P,
                                        Q,
                                        R,
-                                       N)
+                                       N,
+                                       xmin,
+                                       xmax,
+                                       umin,
+                                       umax)
 
 # Initial state 
 
@@ -94,44 +136,6 @@ error_vals = []
 def distance_to_goal(state, goal):
     return np.linalg.norm(state - goal)
 
-xmin = np.matrix([[-np.inf],
-                  [-np.inf],
-                  [-np.inf],
-                  [-np.inf],
-                  [-np.inf],
-                  [-np.inf],
-                  [-10],   # x
-                  [-10],   # y
-                  [-10],   # z
-                  [-np.inf],
-                  [-np.inf],
-                  [-np.inf]
-                  ])
-
-xmax = np.matrix([[np.inf],
-                  [np.inf],
-                  [np.inf],
-                  [np.inf],
-                  [np.inf],
-                  [np.inf],
-                  [10],   # x
-                  [10],   # y
-                  [10],   # z
-                  [np.inf],
-                  [np.inf],
-                  [np.inf]
-                  ])
-
-umin = np.matrix([[-0.005],
-                  [-0.005],
-                  [-0.005],
-                  [-np.inf]])
-
-umax = np.matrix([[0.005],
-                  [0.005],
-                  [0.005],
-                  [np.inf]])
-
 DEADBAND = 1
 
 TIMESTEPS_TO_SETTLE = 10
@@ -158,11 +162,7 @@ for t in time_vec:
 
     start_time = time.time()
     u = blimp_controller.get_tracking_ctrl(x,
-                                           reference_points[ref_idx],
-                                           xmin,
-                                           xmax,
-                                           umin,
-                                           umax)
+                                           reference_points[ref_idx])
     times.append(time.time() - start_time)
 
     u0_vals.append(float(u[0].item()))

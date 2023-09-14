@@ -14,7 +14,12 @@ class BlimpTrackingGurobi(ModelPredictiveController):
 
         self.order = self.A.shape[0]
 
-    def __init__(self, A, B, C, D, P, Q, R, N):
+    def __init__(self, A, B, C, D, P, Q, R, N,
+                 xmin,
+                 xmax,
+                 umin,
+                 umax):
+        
         self.A = A
         self.B = B
         self.C = C
@@ -27,6 +32,45 @@ class BlimpTrackingGurobi(ModelPredictiveController):
         self.order = self.A.shape[0]
         self.num_inputs = self.B.shape[1]
         self.num_outputs = self.C.shape[0]
+
+        self.env = gp.Env(empty=True)
+        self.env.setParam('OutputFlag', 0)
+        self.env.setParam('LogToConsole', 0)
+        self.env.start()
+
+        self.m = gp.Model(env=self.env)
+
+        self.x = self.m.addMVar(shape=(self.N+1, self.order),
+                        lb=xmin.T, ub=xmax.T, name='x')
+        self.y = self.m.addMVar(shape=(self.N+1, self.num_outputs),
+                        lb=-GRB.INFINITY, ub=GRB.INFINITY, name='y')
+        self.z = self.m.addMVar(shape=(self.N+1, self.num_outputs),
+                        lb=-GRB.INFINITY, ub=GRB.INFINITY, name='z')
+        self.u = self.m.addMVar(shape=(self.N, self.num_inputs),
+                        lb=umin.T, ub=umax.T, name='u')
+
+        self.m.addConstr(self.x[0, :] == 0, name='ic')
+
+        for k in range(self.N):
+            self.m.addConstr(self.y[k, :] == self.C @ self.x[k, :])
+            self.m.addConstr(self.x[k+1, :] == self.A @ self.x[k, :] + self.B @ self.u[k, :])
+
+        for k in range(self.N):
+            self.m.addConstr(self.z[k, :] == self.y[k, :],
+                                name='error' + str(k))
+
+        # terminal cost
+        obj1 = self.z[self.N, :] @ self.P @ self.z[self.N, :]
+        
+        # running state/error cost
+        obj2 = sum(self.z[k, :] @ self.Q @ self.z[k, :] for k in range(self.N))
+        
+        # running input cost
+        obj3 = sum(self.u[k, :] @ self.R @ self.u[k, :] for k in range(self.N))
+
+        self.m.setObjective(obj1 + obj2 + obj3)
+
+        self.m.update()
 
         self.times = {}
 
@@ -54,62 +98,24 @@ class BlimpTrackingGurobi(ModelPredictiveController):
     @override
     def get_tracking_ctrl(self,
                           current_state,
-                          reference,
-                          xmin,
-                          xmax,
-                          umin,
-                          umax):
+                          reference):
 
         self.start_timer()
-        with gp.Env(empty=True) as env:
-            env.setParam('OutputFlag', 0)
-            env.setParam('LogToConsole', 0)
-            env.start()
 
-            self.check_time("Benchmark 1")
+        for c in self.m.getConstrs():
+            if c.ConstrName.startswith('ic') or c.ConstrName.startswith('error'):
+                self.m.remove(self.m.getConstrByName(c.ConstrName))
+            
+        self.m.addConstr(self.x[0, :] == current_state.T, name='ic')
 
-            with gp.Model(env=env) as m:
-                self.check_time("Benchmark 2")
+        yr = reference.T
 
-                x = m.addMVar(shape=(self.N+1, self.order),
-                             lb=xmin.T, ub=xmax.T, name='x')
-                y = m.addMVar(shape=(self.N+1, self.num_outputs),
-                             lb=-GRB.INFINITY, ub=GRB.INFINITY, name='y')
-                z = m.addMVar(shape=(self.N+1, self.num_outputs),
-                             lb=-GRB.INFINITY, ub=GRB.INFINITY, name='z')
-                u = m.addMVar(shape=(self.N, self.num_inputs),
-                             lb=umin.T, ub=umax.T, name='u')
-                
-                self.check_time("Benchmark 3")
-
-                m.addConstr(x[0, :] == current_state.T)
-
-                self.check_time("Benchmark 4")
-                
-                yr = reference.T
+        for k in range(self.N):
+            self.m.addConstr(self.z[k, :] == self.y[k, :] - yr,
+                                name='error' + str(k))
         
-                for k in range(self.N):
-                    m.addConstr(y[k, :] == self.C @ x[k, :])
-                    m.addConstr(z[k, :] == y[k, :] - yr)
-                    m.addConstr(x[k+1, :] == self.A @ x[k, :] + self.B @ u[k, :])
+        self.m.optimize()
 
-                self.check_time("Benchmark 5")
+        self.check_time('deltaT')
 
-                # terminal cost
-                obj1 = z[self.N, :] @ self.P @ z[self.N, :]
-                
-                # running state/error cost
-                obj2 = sum(z[k, :] @ self.Q @ z[k, :] for k in range(self.N))
-                
-                # running input cost
-                obj3 = sum(u[k, :] @ self.R @ u[k, :] for k in range(self.N))
-
-                m.setObjective(obj1 + obj2 + obj3)
-
-                self.check_time("Benchmark 6")
-
-                sol = m.optimize()
-                
-                self.check_time("Benchmark 7", True)
-
-                return np.matrix(u.X[0]).T
+        return np.matrix(self.u.X[0]).T

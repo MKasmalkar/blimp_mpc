@@ -6,7 +6,7 @@ disp("Casadi:")
 analyze_performance('Casadi', 'run1.csv', 'rpi_run2.csv');
 disp(' ')
 disp("Gurobi:")
-analyze_performance('Gurobi', 'gur_cmp.csv', 'gur_rpi.csv');
+analyze_performance('Gurobi', 'gur_fast.csv', 'gur_rpi.csv');
 
 function analyze_performance(name, computer_csv, rpi_csv)
     data_computer = readmatrix(computer_csv);
