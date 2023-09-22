@@ -19,6 +19,9 @@ for i in range(10000):
     B_int += scipy.linalg.expm(A * tau) * dTau
 B_dis = B_int @ B #np.linalg.inv(A) @ (A_dis - np.eye(12)) @ B
 
+print(A_dis)
+print(B_dis)
+
 C = np.matrix([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])

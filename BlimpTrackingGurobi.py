@@ -116,4 +116,5 @@ class BlimpTrackingGurobi(ModelPredictiveController):
 
         self.check_time('deltaT')
 
+        print(self.m.status)
         return np.matrix(self.u.X[0]).T
