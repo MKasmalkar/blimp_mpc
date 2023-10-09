@@ -50,6 +50,15 @@ def R_b__n(phi, theta, psi):
     # World-to-body
     return z_rot @ y_rot @ x_rot
 
+def R_b__n_inv(phi, theta, psi):
+    phi = phi.item()
+    theta = theta.item()
+    psi = psi.item()
+
+    return np.array([[np.cos(psi)*np.cos(theta), np.cos(theta)*np.sin(psi), -np.sin(theta)],
+                     [np.cos(psi)*np.sin(phi)*np.sin(theta) - np.cos(phi)*np.sin(psi), np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta), np.cos(theta)*np.sin(phi)],
+                     [np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta), np.cos(phi)*np.sin(psi)*np.sin(theta) - np.cos(psi)*np.sin(phi), np.cos(phi)*np.cos(theta)]])
+
 def T(phi, theta):
     phi = phi.item()
     theta = theta.item()
@@ -90,6 +99,8 @@ M_RB_CB = H(r_gb__b).T @ M_RB_CG @ H(r_gb__b)
 
 M_CB = M_RB_CB + M_A_CB
 
+M_CB_inv = np.linalg.inv(M_CB)
+
 m_x = m_RB + m_Ax
 m_y = m_RB + m_Ay
 m_z = m_RB + m_Az
@@ -119,10 +130,14 @@ D_CB = np.diag([D_vx__CB, D_vy__CB, D_vz__CB, D_wx__CB, D_wy__CB, D_wz__CB])
 ## Simulation
 
 # Time
-dT = 0.01
-TIMEOUT = 20
+dT = 0.075
+TRACKING_TIME = 20
+SETTLE_TIME = 100
 
-time_vec = np.arange(0, TIMEOUT, dT)
+tracking_time = np.arange(0, TRACKING_TIME, dT)
+settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME, dT)
+
+time_vec = np.concatenate((tracking_time, settle_time))
 
 # Initial conditions
 x0 = 1
@@ -156,36 +171,36 @@ error = np.empty((2, 4, len(time_vec)))
 # Trajectory definition
 f = 0.05
 
-traj_x = np.cos(2*np.pi*f*time_vec)
-traj_y = np.sin(2*np.pi*f*time_vec)
-traj_z = time_vec * -1/10
-traj_psi = psi0 + 2*np.pi*f*time_vec
+traj_x = np.concatenate((np.cos(2*np.pi*f*tracking_time), np.ones(len(settle_time))))
+traj_y = np.concatenate((np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_z = np.concatenate((tracking_time * -1/10, -TRACKING_TIME * 1/10 * np.ones(len(settle_time))))
+traj_psi = np.concatenate((psi0 + 2*np.pi*f*tracking_time, (psi0 + 2*np.pi) * np.ones(len(settle_time))))
 
-traj_x_dot = -2*np.pi*f*np.sin(2*np.pi*f*time_vec)
-traj_y_dot = 2*np.pi*f*np.cos(2*np.pi*f*time_vec)
-traj_z_dot = -1/10 * np.ones(len(time_vec))
-traj_psi_dot = 2*np.pi*f * np.ones(len(time_vec))
+traj_x_dot = np.concatenate((-2*np.pi*f*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_y_dot = np.concatenate((2*np.pi*f*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_z_dot = np.concatenate((-1/10 * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
+traj_psi_dot = np.concatenate((2*np.pi*f * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
 
-traj_x_ddot = -(2*np.pi*f)**2*np.cos(2*np.pi*f*time_vec)
-traj_y_ddot = -(2*np.pi*f)**2*np.sin(2*np.pi*f*time_vec)
-traj_z_ddot = np.zeros(len(time_vec))
-traj_psi_ddot = np.zeros(len(time_vec))
+traj_x_ddot = np.concatenate((-(2*np.pi*f)**2*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_y_ddot = np.concatenate((-(2*np.pi*f)**2*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_z_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
+traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
 
 # Set up figure
 
 fig = plt.figure()
-ax_3d = fig.add_subplot(131, projection='3d')
+ax_3d = fig.add_subplot(211, projection='3d')
 plt.ion()
 ax_3d.grid()
 
-ax_err = fig.add_subplot(132)
+ax_err = fig.add_subplot(223)
 
-ax_zd = fig.add_subplot(133)
+ax_zd = fig.add_subplot(224)
 
 plt.subplots_adjust(wspace=0.5)
 
 try:
-    for n in range(len(time_vec)):
+    for n in range(len(time_vec) - 1):
         # print()
         # print("Time: " + str(time_vec[n]))
 
@@ -263,7 +278,7 @@ try:
         tau_B = np.array([u[0], u[1], u[2], -r_z_tg__b * u[1], r_z_tg__b * u[0], u[3]])
         
         # Restoration torque
-        fg_B = np.linalg.inv(R_b__n(phi, theta, psi)) @ fg_n
+        fg_B = R_b__n_inv(phi, theta, psi) @ fg_n
         g_CB = -np.block([[np.zeros((3, 1))],
                         [np.reshape(np.cross(r_gb__b, fg_B), (3, 1))]])
 
@@ -271,7 +286,7 @@ try:
         eta_bn_n_dot = np.block([[R_b__n(phi, theta, psi),    np.zeros((3, 3))],
                                 [np.zeros((3, 3)),            T(phi, theta)]]) @ nu_bn_b
         
-        nu_bn_b_dot = np.reshape(-np.linalg.inv(M_CB) @ (C(M_RB_CB + M_A_CB, nu_bn_b) @ nu_bn_b + \
+        nu_bn_b_dot = np.reshape(-M_CB_inv @ (C(M_CB, nu_bn_b) @ nu_bn_b + \
                             D_CB @ nu_bn_b + g_CB - tau_B), (6, 1))
         
         eta_bn_n = eta_bn_n + eta_bn_n_dot * dT
@@ -376,3 +391,5 @@ except KeyboardInterrupt:
     plt.draw()
     plt.pause(0.01)
     plt.show(block=True)
+
+plt.show(block=True)
