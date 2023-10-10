@@ -130,7 +130,7 @@ D_CB = np.diag([D_vx__CB, D_vy__CB, D_vz__CB, D_wx__CB, D_wy__CB, D_wz__CB])
 ## Simulation
 
 # Time
-dT = 0.075
+dT = 0.05
 TRACKING_TIME = 20
 SETTLE_TIME = 100
 
