@@ -273,7 +273,7 @@ plt.subplots_adjust(hspace=1.0)
 
 try:
     for n in range(len(time_vec) - 1):
-        if time_vec[n] > 10:
+        if time_vec[n] > 1050:
             input()
             sys.exit()
         
@@ -309,29 +309,43 @@ try:
         w_y_dot = state_dot[10, n]
         w_z_dot = state_dot[11, n]
         
-        state[0, n] = 0
-        state[1, n] = 0
-        state[2, n] = 0
-        eta_bn_n[0] = 0
-        eta_bn_n[1] = 0
-        eta_bn_n[2] = 0
+        # # Set x, y, z = 0
+        # state[0, n] = 0
+        # state[1, n] = 0
+        # state[2, n] = 0
+        # eta_bn_n[0] = 0
+        # eta_bn_n[1] = 0
+        # eta_bn_n[2] = 0
         
-        state[6, n] = 0
-        state[7, n] = 0
-        state[8, n] = 0
-        nu_bn_b[0] = 0
-        nu_bn_b[1] = 0
-        nu_bn_b[2] = 0
+        # # Set vx, vy, vz = 0
+        # state[6, n] = 0
+        # state[7, n] = 0
+        # state[8, n] = 0
+        # nu_bn_b[0] = 0
+        # nu_bn_b[1] = 0
+        # nu_bn_b[2] = 0
+
+        # # Set wx, wz = 0
+        # state[9] = 0
+        # state[11] = 0
+        # nu_bn_b[3] = 0
+        # nu_bn_b[5] = 0
+
+        # # Set phi, psi = 0
+        # state[3] = 0
+        # state[5] = 0
+        # eta_bn_n[3] = 0
+        # eta_bn_n[5] = 0
 
         # K = control.lqr(A_lin, B_lin, Q, R)[0]
         # u = -(K @ state[:, n].reshape((12, 1))).reshape((4, 1))
         
         # u = np.array([0, 0, 0, 0]).reshape((4,1))
 
-        K = np.array([-3.4750, 4.8250])
+        K = np.array([-3.5867, 4.8598])
         f_x_th = -K @ np.array([theta, theta_dot]).reshape((2, 1))
         u = np.array([f_x_th.item(), 0, 0, 0]).reshape((4,1))
-        print(u)
+        
         # u = np.array([0.3, 0, 0, 0]).reshape((4,1))
 
         # u[0] = max(-max_acceptable_fx, min(max_acceptable_fx, u[0]))
