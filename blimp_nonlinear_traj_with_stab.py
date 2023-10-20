@@ -163,8 +163,11 @@ settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME, dT)
 
 time_vec = np.concatenate((tracking_time, settle_time))
 
-# Initial conditions
-x0 = 1
+# Trajectory definition
+f = 0.05
+At = 0.2
+
+x0 = At
 y0 = 0
 z0 = 0
 
@@ -180,33 +183,18 @@ w_x0 = 0
 w_y0 = 0
 w_z0 = 0
 
-# State vector
-eta_bn_n = np.array([[x0, y0, z0, phi0, theta0, psi0]]).T
-nu_bn_b = np.array([[v_x0, v_y0, v_z0, w_x0, w_y0, w_z0]]).T
-
-state = np.empty((N, len(time_vec)))
-state_dot = np.empty((N, len(time_vec)))
-
-state[:, 0] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
-state_dot[:, 0] = np.zeros(N)
-
-error = np.empty((2, 4, len(time_vec)))
-
-# Trajectory definition
-f = 0.05
-
-traj_x = np.concatenate((np.cos(2*np.pi*f*tracking_time), np.ones(len(settle_time))))
-traj_y = np.concatenate((np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_x = np.concatenate((At * np.cos(2*np.pi*f*tracking_time), At*np.ones(len(settle_time))))
+traj_y = np.concatenate((At * np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
 traj_z = np.concatenate((tracking_time * -1/10, -TRACKING_TIME * 1/10 * np.ones(len(settle_time))))
 traj_psi = np.concatenate((psi0 + 2*np.pi*f*tracking_time, (psi0 + 2*np.pi) * np.ones(len(settle_time))))
 
-traj_x_dot = np.concatenate((-2*np.pi*f*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-traj_y_dot = np.concatenate((2*np.pi*f*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_x_dot = np.concatenate((-2*np.pi*f*At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_y_dot = np.concatenate((2*np.pi*f*At*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
 traj_z_dot = np.concatenate((-1/10 * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
 traj_psi_dot = np.concatenate((2*np.pi*f * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
 
-traj_x_ddot = np.concatenate((-(2*np.pi*f)**2*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-traj_y_ddot = np.concatenate((-(2*np.pi*f)**2*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_x_ddot = np.concatenate((-(2*np.pi*f)**2*At*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
+traj_y_ddot = np.concatenate((-(2*np.pi*f)**2*At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
 traj_z_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
 traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
 
@@ -225,7 +213,52 @@ traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settl
 # traj_z_ddot = np.zeros(len(time_vec))
 # traj_psi_ddot = np.zeros(len(time_vec))
 
-# Set up figure
+# State vector
+eta_bn_n = np.array([[x0, y0, z0, phi0, theta0, psi0]]).T
+nu_bn_b = np.array([[v_x0, v_y0, v_z0, w_x0, w_y0, w_z0]]).T
+
+state = np.empty((N, len(time_vec)))
+state_dot = np.empty((N, len(time_vec)))
+
+state[:, 0] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
+state_dot[:, 0] = np.zeros(N)
+
+error = np.empty((2, 4, len(time_vec)))
+
+## Swing reducing controller
+
+v_x_error_int = 0
+v_y_error_int = 0
+theta_error_int = 0
+phi_error_int = 0
+
+# velocity setpoints
+k_x = 1
+k_y = 1
+
+# Theta setpoint
+kp_x = 1
+ki_x = 1
+
+# Phi setpoint
+kp_y = 1
+ki_y = 1
+
+# f_x computation
+kfx_th = 1
+kfx_w = 1
+
+# f_y computation
+kfy_phi = 1
+kfy_w = 1
+
+# z correction
+kz = 0
+
+# psi correction
+kpsi = 0
+
+## Set up figure
 
 fig = plt.figure()
 ax_3d = fig.add_subplot(211, projection='3d')
@@ -267,6 +300,8 @@ try:
         phi_dot = state_dot[3, n]
         theta_dot = state_dot[4, n]
         psi_dot = state_dot[5, n]
+
+        ## Feedback-linearized tracking controller
 
         # Compute input to integrator chain
         A = np.array([[v_y__b*(- np.cos(phi)*np.cos(psi)*psi_dot + np.sin(phi)*np.sin(psi)*phi_dot + ((np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta))*(D_vxy__CB*I_x + m_RB*m_z*r_z_gb__b*v_z__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + np.cos(phi)*np.cos(psi)*np.sin(theta)*phi_dot + np.cos(psi)*np.cos(theta)*np.sin(phi)*theta_dot - np.sin(phi)*np.sin(psi)*np.sin(theta)*psi_dot) + w_z__b*(((I_x*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*(I_y*w_y__b + m_RB*r_z_gb__b*v_x__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2))*(np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta)) + np.cos(psi)*np.cos(theta)*((I_y*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (m_RB*r_z_gb__b*(I_x*w_x__b - m_RB*r_z_gb__b*v_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2))) - v_z__b*((D_vz__CB*(np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta)))/m_z - np.cos(phi)*np.sin(psi)*phi_dot - np.cos(psi)*np.sin(phi)*psi_dot + np.cos(psi)*np.sin(phi)*np.sin(theta)*phi_dot + np.cos(phi)*np.sin(psi)*np.sin(theta)*psi_dot - np.cos(phi)*np.cos(psi)*np.cos(theta)*theta_dot + (m_RB*r_z_gb__b*(m_y*v_y__b - m_RB*r_z_gb__b*w_x__b)*(np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2) - (m_RB*r_z_gb__b*np.cos(psi)*np.cos(theta)*(m_x*v_x__b + m_RB*r_z_gb__b*w_y__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) - w_x__b*(((m_y*v_y__b - m_RB*r_z_gb__b*w_x__b)*(np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta)))/m_z + ((np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta))*(I_x*m_z*v_z__b - D_omega_xy__CB*m_RB*r_z_gb__b))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (I_z*m_RB*r_z_gb__b*np.cos(psi)*np.cos(theta)*w_z__b)/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + w_y__b*(((m_x*v_x__b + m_RB*r_z_gb__b*w_y__b)*(np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta)))/m_z - (np.cos(psi)*np.cos(theta)*(I_y*m_z*v_z__b - D_omega_xy__CB*m_RB*r_z_gb__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2) + (I_z*m_RB*r_z_gb__b*w_z__b*(np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2)) - v_x__b*(np.cos(theta)*np.sin(psi)*psi_dot + np.cos(psi)*np.sin(theta)*theta_dot + (np.cos(psi)*np.cos(theta)*(D_vxy__CB*I_y + m_RB*m_z*r_z_gb__b*v_z__b))/(I_y*m_x - m_RB**2*r_z_gb__b**2)) + (f_g*m_RB*r_z_gb__b**2*np.cos(theta)*np.sin(phi)*(np.cos(phi)*np.sin(psi) - np.cos(psi)*np.sin(phi)*np.sin(theta)))/(I_x*m_y - m_RB**2*r_z_gb__b**2) + (f_g*m_RB*r_z_gb__b**2*np.cos(psi)*np.cos(theta)*np.sin(theta))/(I_y*m_x - m_RB**2*r_z_gb__b**2)],
@@ -316,23 +351,76 @@ try:
 
         u_traj = Binv @ (q - A)
 
-        # Compute compensator for zero dynamics
-        zd_K, zd_S, zd_E = control.lqr(A_lin, B_lin, zd_Q, zd_R)
-        u_zd = - zd_K @ np.array([[0],
-                                  [0],
-                                  [0],
-                                  [phi],
-                                  [theta],
-                                  [0],
-                                  [0],
-                                  [0],
-                                  [0],
-                                  [w_x__b],
-                                  [w_y__b],
-                                  [w_z__b]])
-
-        u = u_traj + u_zd
+        ## Swing-reducing controller
         
+        # Compute setpoints
+        x_error = e1[0].item()
+        y_error = e1[1].item()
+        z_error = e1[2].item()
+        psi_error = e1[3].item()
+
+        v_sp_b = R_b__n_inv(phi, theta, psi) @ np.array([x_error, y_error, z_error]).reshape((3, 1))
+        v_x_sp = -k_x * v_sp_b[0].item()
+        v_y_sp = -k_y * v_sp_b[1].item()
+
+        # Update v_x error and integral of v_x error
+        delta_v_x = v_x__b - v_x_sp
+        v_x_error_int += delta_v_x * dT
+        
+        # Compute theta setpoint
+        theta_sp = np.arcsin(D_vxy__CB * r_z_tg__b / (r_z_gb__b * m_RB * g_acc) * v_x_sp) \
+                    - kp_x * delta_v_x - ki_x * v_x_error_int
+        
+        # Update theta error and integral of theta error
+        theta_error = theta - theta_sp
+        theta_error_int += theta_error * dT
+        wy_error = w_y__b - 0
+
+        # Compute f_x
+        f_x = r_z_gb__b / r_z_tg__b * m_RB * g_acc * np.sin(theta_sp) \
+                - kfx_th * theta_error \
+                - kfx_w * wy_error
+        
+        # Update v_y_error and integral of v_y error
+        delta_v_y = v_y__b - v_y_sp
+        v_y_error_int += delta_v_y * dT
+
+        # Compute phi setpoint
+        phi_sp = np.arcsin(D_vxy__CB * r_z_tg__b / (r_z_gb__b * m_RB * g_acc) * v_y_sp) \
+                    - kp_y * delta_v_y - ki_y * v_y_error_int
+        
+        # Update phi error and integral of phi error
+        phi_error = phi - phi_sp
+        phi_error_int += phi_error * dT
+        wx_error = w_x__b - 0
+
+        # Compute f_y
+        f_y = r_z_gb__b / r_z_tg__b * m_RB * g_acc * np.sin(phi_sp) \
+                - kfy_phi * phi_error \
+                - kfy_w * wx_error
+        
+        # z correction
+        f_z = -kz * v_sp_b[2].item()
+
+        # psi correction
+        tau_z = -kpsi * psi_error
+        
+        # Swing reducing controller input
+        u_swing = np.array([f_x, f_y, f_z, tau_z]).reshape((4, 1))
+
+        # Compute total input
+
+        k_traj_wx = 100
+        k_traj_wy = 100
+        k_traj = np.diag([min(1, max(1 - abs((abs(theta) % np.pi * k_traj_wy * w_y__b)) / (np.pi/20), 0)),
+                          min(1, max(1 - abs((abs(phi) % np.pi * k_traj_wx * w_x__b)) / (np.pi/20), 0)),
+                          1,
+                          1])
+        
+        k_swing = np.eye(4) - k_traj
+
+        #u = k_traj @ u_traj + k_swing @ u_swing
+        u = u_traj
         tau_B = np.array([u[0], u[1], u[2], -r_z_tg__b * u[1], r_z_tg__b * u[0], u[3]])
         
         # Restoration torque
@@ -434,16 +522,17 @@ try:
         ax_err.set_ylabel('Error')
         ax_err.legend(['x', 'y', 'z', 'psi'])
         ax_err.set_title('Error')
-        ax_err.set_aspect(1/ax_err.get_data_ratio())
+        ax_err.set_ylim(-0.5, 0.5)
 
         ax_zd.cla()
-        ax_zd.plot(time_vec[0:n], state[3, 0:n])
-        ax_zd.plot(time_vec[0:n], state[4, 0:n])
-        ax_zd.plot(time_vec[0:n], state[9, 0:n])
-        ax_zd.plot(time_vec[0:n], state[10, 0:n])
-        ax_zd.legend(['phi', 'theta', 'wx', 'wy'])
+        ax_zd.plot(time_vec[0:n], state[3, 0:n] * 180/np.pi)
+        ax_zd.plot(time_vec[0:n], state[4, 0:n] * 180/np.pi)
+        # ax_zd.plot(time_vec[0:n], state[9, 0:n])
+        # ax_zd.plot(time_vec[0:n], state[10, 0:n])
+        # ax_zd.legend(['phi', 'theta', 'wx', 'wy'])
+        ax_zd.set_ylim(-20, 20)
+        ax_zd.legend(['phi', 'theta'])
         ax_zd.set_title('Pitch/roll')
-        ax_zd.set_aspect(1/ax_zd.get_data_ratio())
 
         plt.draw()
         plt.pause(0.001)

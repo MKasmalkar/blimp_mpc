@@ -188,9 +188,17 @@ state[:, 0] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
 state_dot[:, 0] = np.zeros(N)
 
 v_x_error_int = 0
+v_x_error_prev = 0
 theta_error_int = 0
+theta_error_prev = 0
 
-force = np.empty(len(time_vec))
+v_y_error_int = 0
+v_y_error_prev = 0
+phi_error_int = 0
+phi_error_prev = 0
+
+fx_history = np.empty(len(time_vec))
+fz_history = np.empty(len(time_vec))
 
 # Set up figure
 
@@ -206,6 +214,8 @@ ax_pos = fig.add_subplot(324)
 ax_att = fig.add_subplot(323)
 
 ax_v = fig.add_subplot(325)
+
+ax_forces = fig.add_subplot(326)
 
 plt.subplots_adjust(hspace=1.0)
 
@@ -239,77 +249,84 @@ try:
         theta_dot = state_dot[4, n]
         psi_dot = state_dot[5, n]
         
-        # Zero dynamics compensator parameters
-        zd_Q = np.eye(12) * 100
-        zd_R = np.eye(4)
+        x_target = 1
+        x_error_n = x - x_target
 
-        # A_lin = my_blimp.jacobian_np(state[:, n].reshape(12, 1))
+        y_target = 1
+        y_error_n = y - y_target
 
-        # eigs = np.linalg.eigvals(A_lin)
-        # for eig in eigs:
-        #     print(eig)
-        # print()
+        error_vector_n = np.array([x_error_n, y_error_n, 0]).reshape((3,1))
+        error_vector_b = R_b__n_inv(phi, theta, psi) @ error_vector_n
+        x_error = error_vector_b[0].item()
+        y_error = error_vector_b[1].item()
 
-        #zd_K, zd_S, zd_E = control.lqr(A_lin, B_lin, zd_Q, zd_R)
+        k_x = 1
+        v_x_sp = -k_x * x_error
 
-        #u = - zd_K @ state[:, n].reshape((12, 1))
+        k_y = 1
+        v_y_sp = -k_y * y_error
 
-        kfx_th = 1.0
-        kfx_w = 1.0
+        kp_x = 1
+        ki_x = 1
+        kd_x = 1
 
-        kx = 1.0
-        kz = 1.0
-
-        # K_fdbk = np.array([[kx, 0, kz, 0, kfx_th, 0, 0, 0, 0, 0, kfx_w, 0],
-        #                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        #                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        #                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
-
-        # u = -(K_fdbk @ state[:, n]).reshape((4, 1))
-        # u = np.array([1, 0, 0, 0]).reshape((4, 1))
-
-        # eigs = np.linalg.eigvals(A_lin - B_lin @ zd_K)
-        # for eig in eigs:
-        #     print(eig)
-        # print()
-
-        x_target = 1.0
-        x_error = x - x_target
-
-        k_x = 0.1
-        #v_x_sp = -k_x * x_error
-        v_x_sp = 0.1
-
-        k_p = 0.1
-        k_i = 0.1
+        kp_y = 1
+        ki_y = 1
+        kd_y = 1
 
         delta_v_x = v_x__b - v_x_sp
         v_x_error_int += delta_v_x * dT
 
+        dv_x_error_dt = (delta_v_x - v_x_error_prev) / dT
+        v_x_error_prev = delta_v_x
+
+        delta_v_y = v_y__b - v_y_sp
+        v_y_error_int += delta_v_y * dT
+        
+        dv_y_error_dt = (delta_v_y - v_y_error_prev) / dT
+        v_y_error_prev = delta_v_y
+
         theta_sp = np.arcsin(D_vxy__CB * r_z_tg__b / (r_z_gb__b * m_RB * g_acc) * v_x_sp) \
-                    - k_p * delta_v_x - k_i * v_x_error_int
+                    - kp_x * delta_v_x - ki_x * v_x_error_int
         
         theta_error = theta - theta_sp
         theta_error_int += theta_error * dT
 
-        wy_error = w_y__b - 0
+        phi_sp = np.arcsin(D_vxy__CB * r_z_tg__b / (r_z_gb__b * m_RB * g_acc) * v_y_sp) \
+                    - kp_y * delta_v_y - ki_y * v_y_error_int
 
+        phi_error = phi - phi_sp
+        phi_error_int += phi_error * dT
+
+        wy_error = w_y__b - 0
+        wx_error = w_x__b - 0
+
+        kfx_th = 1
+        kfx_w = 1
+
+        kfy_phi = 1
+        kfy_w = 1
+        
         f_x = r_z_gb__b / r_z_tg__b * m_RB * g_acc * np.sin(theta_sp) \
                 - kfx_th * theta_error \
                 - kfx_w * wy_error
         
-        kz = 0.1
+        f_y = r_z_gb__b / r_z_tg__b * m_RB * g_acc * np.sin(phi_sp) \
+                - kfy_phi * phi_error \
+                - kfy_w * wx_error
+        
+        fx_history[n] = f_x
+        
+        kz = 1
         z_target = 0
         z_error = z - z_target
         f_z = -kz * z_error
+        
+        fz_history[n] = f_z
 
-        # print(np.arcsin(v_x_sp * D_vxy__CB * r_z_tg__b / r_z_gb__b / m_RB / g_acc))
-        # print(r_z_gb__b * m_RB * g_acc * np.sin(0.0055) / D_vxy__CB / r_z_tg__b)
-
-        u = np.array([f_x, 0, f_z, 0]).reshape((4, 1))
+        u = np.array([f_x, f_y, f_z, 0]).reshape((4, 1))
 
         tau_B = np.array([u[0], u[1], u[2], -r_z_tg__b * u[1], r_z_tg__b * u[0], u[3]])
-        # tau_B = np.array([0, 0, 0, 0, 0, 0]).reshape((6, 1))
 
         # Restoration torque
         fg_B = R_b__n_inv(phi, theta, psi) @ fg_n
@@ -329,11 +346,6 @@ try:
         state[:, n+1] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
         state_dot[:, n+1] = ((state[:, n+1] - state[:, n]) / dT).reshape(N)
 
-        # state[:, n+1] = state[:, n] + dT * state_dot[:, n]
-        # state_dot[:, n+1] = (A_lin @ state[:, n].reshape((12, 1)) + B_lin @ u).reshape(12)
-        
-        force[n] = u[0]
-
         ax_3d.cla()
         ax_3d.scatter(state[0, 0:n], state[1, 0:n], state[2, 0:n], color='blue', s=100)
         ax_3d.scatter(eta_bn_n[0], eta_bn_n[1], eta_bn_n[2], color='m', s=200)
@@ -346,8 +358,10 @@ try:
 
         ax_v.cla()
         ax_v.plot(time_vec[0:n], state[6, 0:n])
+        ax_v.plot(time_vec[0:n], state[7, 0:n])
+        ax_v.plot(time_vec[0:n], state[8, 0:n])
         ax_v.set_xlabel('Time')
-        ax_v.legend('v_x')
+        ax_v.legend(['v_x', 'v_y', 'v_z'])
 
         ax_or.cla()
         blimp_vector_scaling = 2
@@ -393,11 +407,16 @@ try:
         ax_pos.legend(['x', 'y', 'z'])
 
         ax_att.cla()
-        ax_att.plot(time_vec[0:n], state[3, 0:n])
-        ax_att.plot(time_vec[0:n], state[4, 0:n])
-        ax_att.plot(time_vec[0:n], state[5, 0:n])
+        ax_att.plot(time_vec[0:n], state[3, 0:n] * 180/np.pi)
+        ax_att.plot(time_vec[0:n], state[4, 0:n] * 180/np.pi)
+        ax_att.plot(time_vec[0:n], state[5, 0:n] * 180/np.pi)
         ax_att.legend(['phi', 'theta', 'psi'])
         
+        ax_forces.cla()
+        ax_forces.plot(time_vec[0:n], fx_history[0:n])
+        ax_forces.plot(time_vec[0:n], fz_history[0:n])
+        ax_forces.legend(['fx', 'fz'])
+
         plt.draw()
         plt.pause(0.001)
 
