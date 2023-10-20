@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import control
 from rta.blimp import Blimp
 import scipy
-import sys
 
 ##  Operators
 def H(r):
@@ -184,22 +183,6 @@ w_x0 = 0
 w_y0 = 0
 w_z0 = 0
 
-# x0 = 9.85601983e-01
-# y0 = -1.55297831e-01
-# z0 = -1.95001036e+00
-
-# phi0 = 1.17189905e-02
-# theta0 = -1.45800250e-01
-# psi0 = 7.69690160e+00
-
-# v_x0 = 2.95591953e-01
-# v_y0 = 1.02004348e-03
-# v_z0 = -1.44491356e-01
-
-# w_x0 = 4.48550691e-02
-# w_y0 = 4.15662901e-02
-# w_z0 = 3.10362917e-01
-
 traj_x = np.concatenate((At * np.cos(2*np.pi*f*tracking_time), At*np.ones(len(settle_time))))
 traj_y = np.concatenate((At * np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
 traj_z = np.concatenate((tracking_time * -1/10, -TRACKING_TIME * 1/10 * np.ones(len(settle_time))))
@@ -240,109 +223,21 @@ state_dot = np.empty((N, len(time_vec)))
 state[:, 0] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
 state_dot[:, 0] = np.zeros(N)
 
-state[:, 390] = np.array([9.85601983e-01,
-                        -1.55297831e-01,
-                        -1.95001036e+00,  
-                        1.17189905e-02, 
-                        -1.45800250e-01, 
-                         7.69690160e+00,  
-                         2.95591953e-01,  
-                         1.02004348e-03, 
-                        -1.44491356e-01, 
-                         4.48550691e-02, 
-                         4.15662901e-02, 
-                         3.10362917e-01])
-
-eta_bn_n = state[0:6, 390].reshape((6, 1))
-nu_bn_b = state[6:12, 390].reshape((6, 1))
-
-state_dot[:, 390] = np.array([ 5.12175211e-02,  
-                            3.09243929e-01,
-                            -9.99919352e-02,
-                            -1.15550288e-03, 
-                            3.78695897e-02,  
-                            3.14162015e-01,  
-                            5.48175380e-03,  
-                            2.96498902e-04, 
-                            1.11918405e-02, 
-                            -4.41363447e-03, 
-                             7.97562719e-04,  
-                             1.77348477e-03])
-
 error = np.empty((2, 4, len(time_vec)))
 
-## Swing reducing controller
+## Zero dynamics stabilization
 
-v_x_error_int = 0
-v_y_error_int = 0
-theta_error_int = 0
+w_y_error_int = 0
+w_x_error_int = 0
+
+w_y_error_prev = 0
+w_x_error_prev = 0
+
+th_error_int = 0
+th_error_prev = 0
+
 phi_error_int = 0
-
-# velocity setpoints
-k_x = 1
-k_y = 1
-
-# Theta setpoint
-kp_x = 1
-ki_x = 1
-
-# Phi setpoint
-kp_y = 1
-ki_y = 1
-
-# f_x computation
-kfx_th = 1
-kfx_w = 1
-
-# f_y computation
-kfy_phi = 1
-kfy_w = 1
-
-# z correction
-kz = 0
-
-# psi correction
-kpsi = 0
-
-
-# LQR Using Bryson's Rule
-
-max_acceptable_theta = 5 * np.pi/180
-max_acceptable_phi = 5 * np.pi/180
-max_acceptable_wy = 0.1
-max_acceptable_wx = 0.1
-
-Q = np.array([[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 1/max_acceptable_phi**2, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 1/max_acceptable_theta**2, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wx**2, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wy**2, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-
-# Q[7][11] = 1
-# Q[11][7] = 1
-# Q[9][11] = 1
-# Q[11][9] = 1
-# Q[10][8] = 1
-# Q[8][10] = 1
-
-max_acceptable_fx = 5
-max_acceptable_fy = 5
-max_acceptable_fz = 5
-
-R = np.array([[1/max_acceptable_fx**2, 0, 0 ,0],
-              [0, 1/max_acceptable_fy**2, 0, 0],
-              [0, 0, 1/max_acceptable_fz**2, 0],
-              [0, 0, 0, 1]])
-
-
-K = control.lqr(A_lin, B_lin, Q, R)[0]
+phi_error_prev = 0
 
 ## Set up figure
 
@@ -358,7 +253,7 @@ ax_zd = fig.add_subplot(224)
 plt.subplots_adjust(wspace=0.5)
 
 try:
-    for n in range(390, len(time_vec) - 1):
+    for n in range(len(time_vec) - 1):
         # print()
         # print("Time: " + str(time_vec[n]))
 
@@ -437,98 +332,62 @@ try:
 
         u_traj = Binv @ (q - A)
 
-        ## Swing-reducing controller
-        
-        # # Compute setpoints
-        # x_error = e1[0].item()
-        # y_error = e1[1].item()
-        # z_error = e1[2].item()
-        # psi_error = e1[3].item()
+        ## Swing stabilization
 
-        # v_sp_b = R_b__n_inv(phi, theta, psi) @ np.array([x_error, y_error, z_error]).reshape((3, 1))
-        # v_x_sp = -k_x * v_sp_b[0].item()
-        # v_y_sp = -k_y * v_sp_b[1].item()
+        kwy_p = 0
+        kwy_i = 20000
+        kwy_d = 0.0
 
-        # # Update v_x error and integral of v_x error
-        # delta_v_x = v_x__b - v_x_sp
-        # v_x_error_int += delta_v_x * dT
-        
-        # # Compute theta setpoint
-        # theta_sp = np.arcsin(D_vxy__CB * r_z_tg__b / (r_z_gb__b * m_RB * g_acc) * v_x_sp) \
-        #             - kp_x * delta_v_x - ki_x * v_x_error_int
-        
-        # # Update theta error and integral of theta error
-        # theta_error = theta - theta_sp
-        # theta_error_int += theta_error * dT
-        # wy_error = w_y__b - 0
+        kwx_p = 0
+        kwx_i = 20000
+        kwx_d = 0
 
-        # # Compute f_x
-        # f_x = r_z_gb__b / r_z_tg__b * m_RB * g_acc * np.sin(theta_sp) \
-        #         - kfx_th * theta_error \
-        #         - kfx_w * wy_error
-        
-        # # Update v_y_error and integral of v_y error
-        # delta_v_y = v_y__b - v_y_sp
-        # v_y_error_int += delta_v_y * dT
+        kth_p = 0.075
+        kth_i = 0
+        kth_d = 0.05
 
-        # # Compute phi setpoint
-        # phi_sp = np.arcsin(D_vxy__CB * r_z_tg__b / (r_z_gb__b * m_RB * g_acc) * v_y_sp) \
-        #             - kp_y * delta_v_y - ki_y * v_y_error_int
+        kphi_p = 0.075
+        kphi_i = 0
+        kphi_d = 0.05
         
-        # # Update phi error and integral of phi error
-        # phi_error = phi - phi_sp
-        # phi_error_int += phi_error * dT
-        # wx_error = w_x__b - 0
+        theta_sp = 0
+        th_error = theta - theta_sp
+        th_error_int += th_error * dT
+        th_error_dot = (th_error - th_error_prev) / dT
+        th_error_prev = th_error
 
-        # # Compute f_y
-        # f_y = r_z_gb__b / r_z_tg__b * m_RB * g_acc * np.sin(phi_sp) \
-        #         - kfy_phi * phi_error \
-        #         - kfy_w * wx_error
-        
-        # # z correction
-        # f_z = -kz * v_sp_b[2].item()
+        w_y_target = - kth_p * th_error - kth_i * th_error_int - kth_d * th_error_dot
+        w_y_target = 0
 
-        # # psi correction
-        # tau_z = -kpsi * psi_error
+        w_y_error = w_y__b - w_y_target
+        w_y_error_int += w_y_error * dT
+        w_y_error_dot = (w_y_error - w_y_error_prev) / dT
+        w_y_error_prev = w_y_error
+    
+        f_x = - kwx_p * w_y_error - kwy_i * w_y_error_int - kwx_d * w_y_error_dot
         
-        # # Swing reducing controller input
-        # u_swing = np.array([f_x, f_y, f_z, tau_z]).reshape((4, 1))
+        phi_sp = 0
+        phi_error = phi - phi_sp
+        phi_error_int += phi_error * dT
+        phi_error_dot = (phi_error - phi_error_prev) / dT
+        phi_error_prev = phi_error
 
-        # # Compute total input
+        w_x_target = - kphi_p * phi_error - kphi_i * phi_error_int - kphi_d * phi_error_dot
+        w_x_target = 0
 
-        # k_traj_wx = 100
-        # k_traj_wy = 100
-        # k_traj = np.diag([min(1, max(1 - abs((abs(theta) % np.pi * k_traj_wy * w_y__b)) / (np.pi/20), 0)),
-        #                   min(1, max(1 - abs((abs(phi) % np.pi * k_traj_wx * w_x__b)) / (np.pi/20), 0)),
-        #                   1,
-        #                   1])
-        
-        # k_swing = np.eye(4) - k_traj
+        w_x_error = w_x__b - w_x_target
+        w_x_error_int += w_x_error * dT
+        w_x_error_dot = (w_x_error - w_x_error_prev) / dT
+        w_x_error_prev = w_x_error
 
-        # k_lqr = 0.05
-        # print(np.around(u_traj.reshape(4), 3), '\t', np.around(k_lqr * u_lqr.reshape(4), 3))
+        f_y = - kwy_p * w_x_error - kwx_i * w_x_error_int - kwy_d * w_x_error_dot
         
-        if time_vec[n] < 20:
-            # u = u_traj + k_lqr * u_lqr
-            u = u_traj
-        else:
-            # LQR
-            lqr_err = np.array([[x - traj_x[n]],
-                                [y - traj_y[n]],
-                                [z - traj_z[n]],
-                                [phi],
-                                [theta],
-                                [psi - traj_psi[n]],
-                                [v_x__b],
-                                [v_y__b],
-                                [v_z__b],
-                                [w_x__b],
-                                [w_y__b],
-                                [w_z__b]])
-            
-            u_lqr = -K @ lqr_err
-            u = u_traj + 0.01 * u_lqr
+        # Swing reducing controller input
+        u_swing = np.array([f_x, f_y, 0, 0]).reshape((4, 1))
         
+        # Compute total input
+        k_swing = 0.001
+        u = u_traj + k_swing * u_swing
         tau_B = np.array([u[0], u[1], u[2], -r_z_tg__b * u[1], r_z_tg__b * u[0], u[3]])
         
         # Restoration torque
@@ -591,6 +450,7 @@ try:
         blimp_vector_scaling = abs(min(x_span,
                                          y_span,
                                          z_span)) * 0.2
+        
         
         blimp_x_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
                         @ np.array([blimp_vector_scaling, 0, 0]).T

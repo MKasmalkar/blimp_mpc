@@ -30,7 +30,6 @@ def C(M, nu):
     return np.block([[ np.zeros((3, 3)),    -S(M11@nu1 + M12@nu2)],
                      [-S(M11@nu1 + M12@nu2), -S(M21@nu1 + M22@nu2)]])
 
-
 ## Rotation matrices
 
 def R_b__n(phi, theta, psi):
@@ -202,6 +201,57 @@ phi_error_prev = 0
 fx_history = np.empty(len(time_vec))
 fz_history = np.empty(len(time_vec))
 
+Q = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],         # x
+              [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],         # y
+              [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],         # z
+              [0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0],      # phi
+              [0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0],      # theta
+              [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],         # psi
+              [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],         # v_x
+              [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],         # v_y
+              [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],         # v_z
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0],      # w_x
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0],      # w_y
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])        # w_z
+
+R = np.eye(4) * 1
+
+# Using Bryson's Rule
+
+max_acceptable_theta = 5 * np.pi/180
+max_acceptable_phi = 5 * np.pi/180
+max_acceptable_wy = 0.1
+max_acceptable_wx = 0.1
+
+Q = np.array([[0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 1/max_acceptable_phi**2, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 1/max_acceptable_theta**2, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wx**2, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wy**2, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.000001]])
+
+# Q[7][11] = 1
+# Q[11][7] = 1
+# Q[9][11] = 1
+# Q[11][9] = 1
+# Q[10][8] = 1
+# Q[8][10] = 1
+
+max_acceptable_fx = 5
+max_acceptable_fy = 5
+max_acceptable_fz = 5
+
+R = np.array([[1/max_acceptable_fx**2, 0, 0 ,0],
+              [0, 1/max_acceptable_fy**2, 0, 0],
+              [0, 0, 1/max_acceptable_fz**2, 0],
+              [0, 0, 0, 1]])
+
 # Set up figure
 
 fig = plt.figure()
@@ -223,6 +273,10 @@ plt.subplots_adjust(hspace=1.0)
 
 try:
     for n in range(len(time_vec) - 1):
+        if time_vec[n] > 10:
+            input()
+            sys.exit()
+        
         # print()
         # print("Time: " + str(time_vec[n]))
 
@@ -254,68 +308,42 @@ try:
         w_x_dot = state_dot[9, n]
         w_y_dot = state_dot[10, n]
         w_z_dot = state_dot[11, n]
-
-        kwy_p = 10
-        kwy_i = 0
-        kwy_d = 0
-
-        kwx_p = 10
-        kwx_i = 0
-        kwx_d = 0
-
-        kth_p = 0.16
-        kth_i = 0
-        kth_d = 0
-
-        kphi_p = 0
-        kphi_i = 0
-        kphi_d = 0
-
-        # p = phi_dot - psi_dot * np.sin(theta)
-        # q = theta_dot * np.cos(phi) + phi_dot * np.cos(phi)*np.sin(theta)        
-
-        theta_sp = 0
-        th_error = theta - theta_sp
-        th_error_int += th_error * dT
-        th_error_dot = (th_error - th_error_prev) / dT
-        th_error_prev = th_error
-
-        w_y_target = - kth_p * th_error - kth_i * th_error_int - kth_d * th_error_dot
-        print(w_y_target)
-    
-        w_y_error = w_y__b - w_y_target
-        w_y_error_int += w_y_error * dT
-        w_y_error_dot = (w_y_error - w_y_error_prev) / dT
-        w_y_error_prev = w_y_error
-    
-        f_x = - kwy_p * w_y_error - kwy_i * w_y_error_int - kwy_d * w_y_error_dot
-    
-        phi_sp = 0
-        phi_error = phi - phi_sp
-        phi_error_int += phi_error * dT
-        phi_error_dot = (phi_error - phi_error_prev) / dT
-        phi_error_prev = phi_error
-
-        w_x_target = - kphi_p * phi_error - kphi_i * phi_error_int - kphi_d * phi_error_dot
         
-        w_x_error = w_x__b - w_x_target
-        w_x_error_int += w_x_error * dT
-        w_x_error_dot = (w_x_error - w_x_error_prev) / dT
-        w_x_error_prev = w_x_error
+        state[0, n] = 0
+        state[1, n] = 0
+        state[2, n] = 0
+        eta_bn_n[0] = 0
+        eta_bn_n[1] = 0
+        eta_bn_n[2] = 0
+        
+        state[6, n] = 0
+        state[7, n] = 0
+        state[8, n] = 0
+        nu_bn_b[0] = 0
+        nu_bn_b[1] = 0
+        nu_bn_b[2] = 0
 
-        f_y = - kwx_p * w_x_error - kwx_i * w_x_error_int - kwx_d * w_x_error_dot
+        # K = control.lqr(A_lin, B_lin, Q, R)[0]
+        # u = -(K @ state[:, n].reshape((12, 1))).reshape((4, 1))
         
-        kz = 1
-        z_target = 0
-        z_error = z - z_target
-        f_z = -kz * z_error
-        f_z = 0
-        
+        # u = np.array([0, 0, 0, 0]).reshape((4,1))
+
+        K = np.array([-3.4750, 4.8250])
+        f_x_th = -K @ np.array([theta, theta_dot]).reshape((2, 1))
+        u = np.array([f_x_th.item(), 0, 0, 0]).reshape((4,1))
+        print(u)
+        # u = np.array([0.3, 0, 0, 0]).reshape((4,1))
+
+        # u[0] = max(-max_acceptable_fx, min(max_acceptable_fx, u[0]))
+        # u[1] = max(-max_acceptable_fy, min(max_acceptable_fy, u[1]))
+        # u[2] = max(-max_acceptable_fz, min(max_acceptable_fz, u[2]))
+
+        f_x = u[0].item()
+        f_z = u[2].item()
+
         fx_history[n] = f_x
         fz_history[n] = f_z
-
-        u = np.array([f_x, f_y, f_z, 0]).reshape((4, 1))
-
+    
         tau_B = np.array([u[0], u[1], u[2], -r_z_tg__b * u[1], r_z_tg__b * u[0], u[3]])
 
         # Restoration torque
@@ -334,7 +362,10 @@ try:
         nu_bn_b = nu_bn_b + nu_bn_b_dot * dT
 
         state[:, n+1] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
-        state_dot[:, n+1] = ((state[:, n+1] - state[:, n]) / dT).reshape(N)
+        state_dot[:, n+1] = np.vstack((eta_bn_n_dot, nu_bn_b_dot)).reshape(N)
+
+        # state_dot[:, n+1] = A_lin @ state[:, n].reshape(12) + (B_lin @ u).reshape(12)
+        # state[:, n+1] = state[:, n] + dT * state_dot[:, n]
 
         # ax_3d.cla()
         # ax_3d.scatter(state[0, 0:n], state[1, 0:n], state[2, 0:n], color='blue', s=100)
@@ -397,10 +428,10 @@ try:
         ax_pos.legend(['x', 'y', 'z'])
 
         ax_att.cla()
-        ax_att.plot(time_vec[0:n], state[3, 0:n] * 180/np.pi)
-        ax_att.plot(time_vec[0:n], state[4, 0:n] * 180/np.pi)
-        ax_att.plot(time_vec[0:n], state[5, 0:n] * 180/np.pi)
-        ax_att.legend(['phi', 'theta', 'psi'])
+        #ax_att.plot(time_vec[0:n], state[3, 0:n])
+        ax_att.plot(time_vec[0:n], state[4, 0:n])
+        #ax_att.plot(time_vec[0:n], state[5, 0:n])
+        ax_att.legend(['theta'])
         
         ax_forces.cla()
         ax_forces.plot(time_vec[0:n], fx_history[0:n])
