@@ -273,7 +273,7 @@ plt.subplots_adjust(hspace=1.0)
 
 try:
     for n in range(len(time_vec) - 1):
-        if time_vec[n] > 1050:
+        if time_vec[n] > 50:
             input()
             sys.exit()
         
@@ -308,7 +308,7 @@ try:
         w_x_dot = state_dot[9, n]
         w_y_dot = state_dot[10, n]
         w_z_dot = state_dot[11, n]
-        
+
         # # Set x, y, z = 0
         # state[0, n] = 0
         # state[1, n] = 0
@@ -317,7 +317,7 @@ try:
         # eta_bn_n[1] = 0
         # eta_bn_n[2] = 0
         
-        # # Set vx, vy, vz = 0
+        # Set vx, vy, vz = 0
         # state[6, n] = 0
         # state[7, n] = 0
         # state[8, n] = 0
@@ -325,13 +325,13 @@ try:
         # nu_bn_b[1] = 0
         # nu_bn_b[2] = 0
 
-        # # Set wx, wz = 0
+        # Set wx, wz = 0
         # state[9] = 0
         # state[11] = 0
         # nu_bn_b[3] = 0
         # nu_bn_b[5] = 0
 
-        # # Set phi, psi = 0
+        # Set phi, psi = 0
         # state[3] = 0
         # state[5] = 0
         # eta_bn_n[3] = 0
@@ -342,10 +342,44 @@ try:
         
         # u = np.array([0, 0, 0, 0]).reshape((4,1))
 
-        K = np.array([-3.5867, 4.8598])
-        f_x_th = -K @ np.array([theta, theta_dot]).reshape((2, 1))
-        u = np.array([f_x_th.item(), 0, 0, 0]).reshape((4,1))
+        # K = np.array([-3.5867, 4.8598])
+        # f_x_th = -K @ np.array([theta, theta_dot]).reshape((2, 1))
+        # u = np.array([f_x_th.item(), 0, 0, 0]).reshape((4,1))
+    
+        # K = np.array([[1.7508, 18.8141, 0.0510, 0],
+        #               [0, 0, 0, 0.3270]])
         
+        A_lin = np.array([
+            [0, 1, 0, 0],
+            [-0.154, -0.0168, 3.9e-4, 0.495*v_x__b],
+            [0.00304, 3.33e-4, -0.0249, -0.00979*v_x__b],
+            [0, 0.615*v_x__b, 0, -0.064]
+        ])
+
+        B_lin = np.array([
+            [0, 0],
+            [0.0398, 0],
+            [2.1661, 0],
+            [0, 1.3335]
+        ])
+
+        max_allowable_theta = 0.05
+        max_allowable_wy = 0.02
+        max_allowable_vx = 0.5
+        max_allowable_vz = 0.5
+        Q = np.array([
+            [1/max_allowable_theta**2, 0, 0, 0],
+            [0, 1/max_allowable_wy**2, 0, 0],
+            [0, 0, 1/max_allowable_vx**2, 0],
+            [0, 0, 0, 1/max_allowable_vz**2]
+        ])
+        R = np.eye(2)
+
+        K = control.lqr(A_lin, B_lin, Q, R)[0]
+
+        f_out = -K @ np.array([theta, theta_dot, v_x__b, v_z__b]).reshape((4,1))
+        u = np.array([f_out[0].item(), 0, f_out[1].item(), 0]).reshape(4,1)
+
         # u = np.array([0.3, 0, 0, 0]).reshape((4,1))
 
         # u[0] = max(-max_acceptable_fx, min(max_acceptable_fx, u[0]))
