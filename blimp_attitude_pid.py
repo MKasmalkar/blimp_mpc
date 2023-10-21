@@ -4,150 +4,13 @@ import control
 from rta.blimp import Blimp
 import scipy
 import sys
-
-##  Operators
-def H(r):
-    return np.block([ [np.identity(3),         S(r).T],
-                      [np.zeros((3, 3)),        np.identity(3)]])
-
-def S(r):
-    return np.block([[  0,       -r[2],    r[1]],
-                     [r[2],     0,      -r[0]],
-                     [-r[1],    r[0],      0]])
-
-def C(M, nu):
-    dimM = np.shape(M)[0]
-
-    M11 = M[0:int(dimM/2), 0:int(dimM/2)]
-    M12 = M[0:int(dimM/2), int(dimM/2):dimM]
-    M21 = M[int(dimM/2):dimM, 0:int(dimM/2)]
-    M22 = M[int(dimM/2):dimM, int(dimM/2):dimM]
-
-    dimNu = np.shape(nu)[0]
-    nu1 = nu[0:int(dimNu/2)]
-    nu2 = nu[int(dimNu/2):dimNu]
-
-    return np.block([[ np.zeros((3, 3)),    -S(M11@nu1 + M12@nu2)],
-                     [-S(M11@nu1 + M12@nu2), -S(M21@nu1 + M22@nu2)]])
-
-
-## Rotation matrices
-
-def R_b__n(phi, theta, psi):
-    phi = phi.item()
-    theta = theta.item()
-    psi = psi.item()
-
-    x_rot = np.array([[1,         0,           0],
-                      [0,       np.cos(phi),   -np.sin(phi)],
-                      [0,       np.sin(phi),    np.cos(phi)]])
-
-    y_rot = np.array([[np.cos(theta),      0,        np.sin(theta)],
-                      [0,         1,           0],
-                      [-np.sin(theta),     0,        np.cos(theta)]])
-    
-    z_rot = np.array([[np.cos(psi),    -np.sin(psi),       0],
-                      [np.sin(psi),     np.cos(psi),       0],
-                      [0,          0,           1]])
-
-    # World-to-body
-    return z_rot @ y_rot @ x_rot
-
-def R_b__n_inv(phi, theta, psi):
-    phi = phi.item()
-    theta = theta.item()
-    psi = psi.item()
-
-    return np.array([[np.cos(psi)*np.cos(theta), np.cos(theta)*np.sin(psi), -np.sin(theta)],
-                     [np.cos(psi)*np.sin(phi)*np.sin(theta) - np.cos(phi)*np.sin(psi), np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta), np.cos(theta)*np.sin(phi)],
-                     [np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta), np.cos(phi)*np.sin(psi)*np.sin(theta) - np.cos(psi)*np.sin(phi), np.cos(phi)*np.cos(theta)]])
-
-def T(phi, theta):
-    phi = phi.item()
-    theta = theta.item()
-
-    return np.array([[1,     np.sin(phi)*np.tan(theta),      np.cos(phi)*np.tan(theta)],
-                     [0,          np.cos(phi),                   -np.sin(phi)],
-                     [0,     np.sin(phi)/np.cos(theta),      np.cos(phi)/np.cos(theta)]])
-
+from operators import *
+from parameters import *
+from controllers import *
 
 ## Constants
 N = 12
 dT = 0.05
-
-## Zero dynamics compensation
-
-# Linearized blimp model
-
-my_blimp = Blimp()
-A_lin = my_blimp.jacobian_np(np.zeros((12, 1)))
-B_lin = my_blimp.B
-
-A_dis = scipy.linalg.expm(A_lin) #np.eye(12) + dT * A
-B_int = np.zeros((12,12))
-for i in range(10000):
-    dTau = dT / 10000
-    tau = i * dTau
-    B_int += scipy.linalg.expm(A_lin * tau) * dTau
-B_dis = B_int @ B_lin #np.linalg.inv(A) @ (A_dis - np.eye(12)) @ B
-
-## Blimp model parameters
-
-# Center of gravity to center of buoyancy
-r_z_gb__b = 0.08705
-r_gb__b = np.array([0, 0, r_z_gb__b]).T
-r_z_tg__b = 0.13 - r_z_gb__b
-
-## Inertia matrix
-
-m_Ax = 0.3566
-m_Ay = m_Ax
-m_Az = 0.645
-
-I_Ax = 0.0
-I_Ay = 0.0
-I_Az = 0.0
-
-M_A_CB = np.diag([m_Ax, m_Ay, m_Az, I_Ax, I_Ay, I_Az])
-
-m_RB = 0.1049
-I_RBx = 0.5821
-I_RBy = I_RBx
-I_RBz = I_RBx
-
-M_RB_CG = np.diag([m_RB, m_RB, m_RB, I_RBx, I_RBy, I_RBz])
-
-M_RB_CB = H(r_gb__b).T @ M_RB_CG @ H(r_gb__b)
-
-M_CB = M_RB_CB + M_A_CB
-
-M_CB_inv = np.linalg.inv(M_CB)
-
-m_x = m_RB + m_Ax
-m_y = m_RB + m_Ay
-m_z = m_RB + m_Az
-
-I_x = I_RBx + m_RB * r_z_gb__b**2 + I_Ax
-I_y = I_RBy + m_RB * r_z_gb__b**2 + I_Ay
-I_z = I_RBz + I_Az
-
-g_acc = 9.8
-fg_n = m_RB * np.array([0, 0, g_acc]).T
-f_g = fg_n[2]
-
-## Aerodynamic damping
-D_vx__CB = 0.0115
-D_vy__CB = D_vx__CB
-D_vz__CB = 0.0480
-D_vxy__CB = D_vx__CB
-
-D_wx__CB = 0.00980
-D_wy__CB = D_wx__CB
-D_wz__CB = D_wx__CB
-D_omega_xy__CB = D_wx__CB
-D_omega_z__CB = D_wz__CB
-
-D_CB = np.diag([D_vx__CB, D_vy__CB, D_vz__CB, D_wx__CB, D_wy__CB, D_wz__CB])
 
 ## Simulation
 
@@ -187,18 +50,11 @@ state_dot = np.empty((N, len(time_vec)))
 state[:, 0] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
 state_dot[:, 0] = np.zeros(N)
 
-v_x_error_int = 0
-v_x_error_prev = 0
-theta_error_int = 0
-theta_error_prev = 0
-
-v_y_error_int = 0
-v_y_error_prev = 0
-phi_error_int = 0
-phi_error_prev = 0
-
 fx_history = np.empty(len(time_vec))
 fz_history = np.empty(len(time_vec))
+
+# Controls
+ctrl = SwingReducingController(dT)
 
 # Set up figure
 
@@ -249,82 +105,22 @@ try:
         theta_dot = state_dot[4, n]
         psi_dot = state_dot[5, n]
         
-        x_target = 1
-        x_error_n = x - x_target
-
-        y_target = 1
-        y_error_n = y - y_target
-
-        error_vector_n = np.array([x_error_n, y_error_n, 0]).reshape((3,1))
-        error_vector_b = R_b__n_inv(phi, theta, psi) @ error_vector_n
-        x_error = error_vector_b[0].item()
-        y_error = error_vector_b[1].item()
-
-        k_x = 1
-        v_x_sp = -k_x * x_error
-
-        k_y = 1
-        v_y_sp = -k_y * y_error
-
-        kp_x = 1
-        ki_x = 1
-        kd_x = 1
-
-        kp_y = 1
-        ki_y = 1
-        kd_y = 1
-
-        delta_v_x = v_x__b - v_x_sp
-        v_x_error_int += delta_v_x * dT
-
-        dv_x_error_dt = (delta_v_x - v_x_error_prev) / dT
-        v_x_error_prev = delta_v_x
-
-        delta_v_y = v_y__b - v_y_sp
-        v_y_error_int += delta_v_y * dT
+        reference = np.array([[1],
+                              [1],
+                              [0],
+                              [0],
+                              [0],
+                              [0],
+                              [0],
+                              [0],
+                              [0],
+                              [0],
+                              [0],
+                              [0]])
         
-        dv_y_error_dt = (delta_v_y - v_y_error_prev) / dT
-        v_y_error_prev = delta_v_y
-
-        theta_sp = np.arcsin(D_vxy__CB * r_z_tg__b / (r_z_gb__b * m_RB * g_acc) * v_x_sp) \
-                    - kp_x * delta_v_x - ki_x * v_x_error_int
-        
-        theta_error = theta - theta_sp
-        theta_error_int += theta_error * dT
-
-        phi_sp = np.arcsin(D_vxy__CB * r_z_tg__b / (r_z_gb__b * m_RB * g_acc) * v_y_sp) \
-                    - kp_y * delta_v_y - ki_y * v_y_error_int
-
-        phi_error = phi - phi_sp
-        phi_error_int += phi_error * dT
-
-        wy_error = w_y__b - 0
-        wx_error = w_x__b - 0
-
-        kfx_th = 1
-        kfx_w = 1
-
-        kfy_phi = 1
-        kfy_w = 1
-        
-        f_x = r_z_gb__b / r_z_tg__b * m_RB * g_acc * np.sin(theta_sp) \
-                - kfx_th * theta_error \
-                - kfx_w * wy_error
-        
-        f_y = r_z_gb__b / r_z_tg__b * m_RB * g_acc * np.sin(phi_sp) \
-                - kfy_phi * phi_error \
-                - kfy_w * wx_error
-        
-        fx_history[n] = f_x
-        
-        kz = 1
-        z_target = 0
-        z_error = z - z_target
-        f_z = -kz * z_error
-        
-        fz_history[n] = f_z
-
-        u = np.array([f_x, f_y, f_z, 0]).reshape((4, 1))
+        u = ctrl.get_ctrl_input(state[:, n], state_dot[:, n], reference)
+        fx_history[n] = u[0]
+        fz_history[n] = u[2]
 
         tau_B = np.array([u[0], u[1], u[2], -r_z_tg__b * u[1], r_z_tg__b * u[0], u[3]])
 

@@ -5,71 +5,8 @@ from rta.blimp import Blimp
 import scipy
 import sys
 import csv
-
-##  Operators
-def H(r):
-    return np.block([ [np.identity(3),         S(r).T],
-                      [np.zeros((3, 3)),        np.identity(3)]])
-
-def S(r):
-    return np.block([[  0,       -r[2],    r[1]],
-                     [r[2],     0,      -r[0]],
-                     [-r[1],    r[0],      0]])
-
-def C(M, nu):
-    dimM = np.shape(M)[0]
-
-    M11 = M[0:int(dimM/2), 0:int(dimM/2)]
-    M12 = M[0:int(dimM/2), int(dimM/2):dimM]
-    M21 = M[int(dimM/2):dimM, 0:int(dimM/2)]
-    M22 = M[int(dimM/2):dimM, int(dimM/2):dimM]
-
-    dimNu = np.shape(nu)[0]
-    nu1 = nu[0:int(dimNu/2)]
-    nu2 = nu[int(dimNu/2):dimNu]
-
-    return np.block([[ np.zeros((3, 3)),    -S(M11@nu1 + M12@nu2)],
-                     [-S(M11@nu1 + M12@nu2), -S(M21@nu1 + M22@nu2)]])
-
-
-## Rotation matrices
-
-def R_b__n(phi, theta, psi):
-    phi = phi.item()
-    theta = theta.item()
-    psi = psi.item()
-
-    x_rot = np.array([[1,         0,           0],
-                      [0,       np.cos(phi),   -np.sin(phi)],
-                      [0,       np.sin(phi),    np.cos(phi)]])
-
-    y_rot = np.array([[np.cos(theta),      0,        np.sin(theta)],
-                      [0,         1,           0],
-                      [-np.sin(theta),     0,        np.cos(theta)]])
-    
-    z_rot = np.array([[np.cos(psi),    -np.sin(psi),       0],
-                      [np.sin(psi),     np.cos(psi),       0],
-                      [0,          0,           1]])
-
-    # World-to-body
-    return z_rot @ y_rot @ x_rot
-
-def R_b__n_inv(phi, theta, psi):
-    phi = phi.item()
-    theta = theta.item()
-    psi = psi.item()
-
-    return np.array([[np.cos(psi)*np.cos(theta), np.cos(theta)*np.sin(psi), -np.sin(theta)],
-                     [np.cos(psi)*np.sin(phi)*np.sin(theta) - np.cos(phi)*np.sin(psi), np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta), np.cos(theta)*np.sin(phi)],
-                     [np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta), np.cos(phi)*np.sin(psi)*np.sin(theta) - np.cos(psi)*np.sin(phi), np.cos(phi)*np.cos(theta)]])
-
-def T(phi, theta):
-    phi = phi.item()
-    theta = theta.item()
-
-    return np.array([[1,     np.sin(phi)*np.tan(theta),      np.cos(phi)*np.tan(theta)],
-                     [0,          np.cos(phi),                   -np.sin(phi)],
-                     [0,     np.sin(phi)/np.cos(theta),      np.cos(phi)/np.cos(theta)]])
+from operators import *
+from parameters import *
 
 if len(sys.argv) < 2:
     print("Please run with output file as argument")
@@ -78,86 +15,6 @@ if len(sys.argv) < 2:
 ## Constants
 N = 12
 dT = 0.05
-
-## Zero dynamics compensation
-
-# Linearized blimp model
-
-my_blimp = Blimp()
-A_lin = my_blimp.jacobian_np(np.zeros((12, 1)))
-B_lin = my_blimp.B
-
-A_dis = scipy.linalg.expm(A_lin) #np.eye(12) + dT * A
-B_int = np.zeros((12,12))
-for i in range(10000):
-    dTau = dT / 10000
-    tau = i * dTau
-    B_int += scipy.linalg.expm(A_lin * tau) * dTau
-B_dis = B_int @ B_lin #np.linalg.inv(A) @ (A_dis - np.eye(12)) @ B
-
-# Zero dynamics compensator parameters
-zd_Q = np.eye(12)
-zd_R = np.eye(4)
-
-## Blimp model parameters
-
-# Center of gravity to center of buoyancy
-r_z_gb__b = 0.08705
-r_gb__b = np.array([0, 0, r_z_gb__b]).T
-r_z_tg__b = 0.13 - r_z_gb__b
-
-## Inertia matrix
-
-m_Ax = 0.3566
-m_Ay = m_Ax
-m_Az = 0.645
-
-I_Ax = 0.0
-I_Ay = 0.0
-I_Az = 0.0
-
-M_A_CB = np.diag([m_Ax, m_Ay, m_Az, I_Ax, I_Ay, I_Az])
-
-m_RB = 0.1049
-I_RBx = 0.5821
-I_RBy = I_RBx
-I_RBz = I_RBx
-
-M_RB_CG = np.diag([m_RB, m_RB, m_RB, I_RBx, I_RBy, I_RBz])
-
-M_RB_CB = H(r_gb__b).T @ M_RB_CG @ H(r_gb__b)
-
-M_CB = M_RB_CB + M_A_CB
-
-M_CB_inv = np.linalg.inv(M_CB)
-
-m_x = m_RB + m_Ax
-m_y = m_RB + m_Ay
-m_z = m_RB + m_Az
-
-I_x = I_RBx + m_RB * r_z_gb__b**2 + I_Ax
-I_y = I_RBy + m_RB * r_z_gb__b**2 + I_Ay
-I_z = I_RBz + I_Az
-
-g_acc = 9.8
-fg_n = m_RB * np.array([0, 0, g_acc]).T
-f_g = fg_n[2]
-
-## Aerodynamic damping
-D_vx__CB = 0.0115
-D_vy__CB = D_vx__CB
-D_vz__CB = 0.0480
-D_vxy__CB = D_vx__CB
-
-D_wx__CB = 0.00980
-D_wy__CB = D_wx__CB
-D_wz__CB = D_wx__CB
-D_omega_xy__CB = D_wx__CB
-D_omega_z__CB = D_wz__CB
-
-D_CB = np.diag([D_vx__CB, D_vy__CB, D_vz__CB, D_wx__CB, D_wy__CB, D_wz__CB])
-
-## Simulation
 
 # Time
 TRACKING_TIME = 20
@@ -188,22 +45,6 @@ w_x0 = 0
 w_y0 = 0
 w_z0 = 0
 
-# x0 = 9.85601983e-01
-# y0 = -1.55297831e-01
-# z0 = -1.95001036e+00
-
-# phi0 = 1.17189905e-02
-# theta0 = -1.45800250e-01
-# psi0 = 7.69690160e+00
-
-# v_x0 = 2.95591953e-01
-# v_y0 = 1.02004348e-03
-# v_z0 = -1.44491356e-01
-
-# w_x0 = 4.48550691e-02
-# w_y0 = 4.15662901e-02
-# w_z0 = 3.10362917e-01
-
 traj_x = np.concatenate((At * np.cos(2*np.pi*f*tracking_time), At*np.ones(len(settle_time))))
 traj_y = np.concatenate((At * np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
 traj_z = np.concatenate((tracking_time * -1/10, -TRACKING_TIME * 1/10 * np.ones(len(settle_time))))
@@ -219,21 +60,6 @@ traj_y_ddot = np.concatenate((-(2*np.pi*f)**2*At*np.sin(2*np.pi*f*tracking_time)
 traj_z_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
 traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
 
-# traj_x = np.zeros(len(time_vec))
-# traj_y = np.zeros(len(time_vec))
-# traj_z = np.zeros(len(time_vec))
-# traj_psi = np.zeros(len(time_vec))
-
-# traj_x_dot = np.zeros(len(time_vec))
-# traj_y_dot = np.zeros(len(time_vec))
-# traj_z_dot = np.zeros(len(time_vec))
-# traj_psi_dot = np.zeros(len(time_vec))
-
-# traj_x_ddot = np.zeros(len(time_vec))
-# traj_y_ddot = np.zeros(len(time_vec))
-# traj_z_ddot = np.zeros(len(time_vec))
-# traj_psi_ddot = np.zeros(len(time_vec))
-
 # State vector
 eta_bn_n = np.array([[x0, y0, z0, phi0, theta0, psi0]]).T
 nu_bn_b = np.array([[v_x0, v_y0, v_z0, w_x0, w_y0, w_z0]]).T
@@ -246,133 +72,25 @@ state_dot[:, 0] = np.zeros(N)
 
 u_log = np.empty((4, len(time_vec)))
 
-# state[:, 390] = np.array([9.85601983e-01,
-#                         -1.55297831e-01,
-#                         -1.95001036e+00,  
-#                         1.17189905e-02, 
-#                         -1.45800250e-01, 
-#                          7.69690160e+00,  
-#                          2.95591953e-01,  
-#                          1.02004348e-03, 
-#                         -1.44491356e-01, 
-#                          4.48550691e-02, 
-#                          4.15662901e-02, 
-#                          3.10362917e-01])
-
-# eta_bn_n = state[0:6, 390].reshape((6, 1))
-# nu_bn_b = state[6:12, 390].reshape((6, 1))
-
-# state_dot[:, 390] = np.array([ 5.12175211e-02,  
-#                             3.09243929e-01,
-#                             -9.99919352e-02,
-#                             -1.15550288e-03, 
-#                             3.78695897e-02,  
-#                             3.14162015e-01,  
-#                             5.48175380e-03,  
-#                             2.96498902e-04, 
-#                             1.11918405e-02, 
-#                             -4.41363447e-03, 
-#                              7.97562719e-04,  
-#                              1.77348477e-03])
-
 error = np.empty((2, 4, len(time_vec)))
-
-## Swing reducing controller
-
-v_x_error_int = 0
-v_y_error_int = 0
-theta_error_int = 0
-phi_error_int = 0
-
-# velocity setpoints
-k_x = 1
-k_y = 1
-
-# Theta setpoint
-kp_x = 1
-ki_x = 1
-
-# Phi setpoint
-kp_y = 1
-ki_y = 1
-
-# f_x computation
-kfx_th = 1
-kfx_w = 1
-
-# f_y computation
-kfy_phi = 1
-kfy_w = 1
-
-# z correction
-kz = 0
-
-# psi correction
-kpsi = 0
-
-
-# LQR Using Bryson's Rule
-
-max_acceptable_theta = 5 * np.pi/180
-max_acceptable_phi = 5 * np.pi/180
-max_acceptable_wy = 0.1
-max_acceptable_wx = 0.1
-
-Q = np.array([[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 1/max_acceptable_phi**2, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 1/max_acceptable_theta**2, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wx**2, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wy**2, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-
-# Q[7][11] = 1
-# Q[11][7] = 1
-# Q[9][11] = 1
-# Q[11][9] = 1
-# Q[10][8] = 1
-# Q[8][10] = 1
-
-max_acceptable_fx = 5
-max_acceptable_fy = 5
-max_acceptable_fz = 5
-
-R = np.array([[1/max_acceptable_fx**2, 0, 0 ,0],
-              [0, 1/max_acceptable_fy**2, 0, 0],
-              [0, 0, 1/max_acceptable_fz**2, 0],
-              [0, 0, 0, 1]])
-
-
-K = control.lqr(A_lin, B_lin, Q, R)[0]
 
 ## Set up figure
 
 fig = plt.figure()
-ax_3d = fig.add_subplot(211, projection='3d')
 plt.ion()
+
+ax_3d = fig.add_subplot(211, projection='3d')
 ax_3d.grid()
 
 ax_err = fig.add_subplot(323)
-
 ax_zd = fig.add_subplot(324)
-
 ax_v = fig.add_subplot(325)
-
 ax_w = fig.add_subplot(326)
 
-# plt.subplots_adjust(wspace=0.5)
 plt.subplots_adjust(hspace=1)
 
 try:
     for n in range(len(time_vec) - 1):
-        # print()
-        # print("Time: " + str(time_vec[n]))
-
         # Extract state variables
         x = state[0, n]
         y = state[1, n]
@@ -449,6 +167,8 @@ try:
         u_traj = Binv @ (q - A)
 
         u = u_traj
+
+        ## Swing stabilization controller
 
         if time_vec[n] >= 20:            
             max_allowable_theta = 0.05
@@ -562,9 +282,6 @@ try:
         ax_3d.set_ylabel('y')
         ax_3d.set_zlabel('z')
         ax_3d.set_title('Trajectory')
-        # ax_3d.set_xlim(-0.001, 0.001)
-        # ax_3d.set_ylim(-0.001, 0.001)
-        # ax_3d.set_zlim(-0.001, 0.001)
 
         ax_err.cla()
         ax_err.plot(time_vec[0:n], error[0, 0, 0:n])
@@ -579,9 +296,6 @@ try:
         ax_zd.cla()
         ax_zd.plot(time_vec[0:n], state[3, 0:n] * 180/np.pi)
         ax_zd.plot(time_vec[0:n], state[4, 0:n] * 180/np.pi)
-        # ax_zd.plot(time_vec[0:n], state[9, 0:n])
-        # ax_zd.plot(time_vec[0:n], state[10, 0:n])
-        # ax_zd.legend(['phi', 'theta', 'wx', 'wy'])
         ax_zd.legend(['phi', 'theta'])
         ax_zd.set_title('Pitch/roll')
 
@@ -606,6 +320,9 @@ except KeyboardInterrupt:
     plt.pause(0.01)
     plt.show(block=True)
 
+except Exception as ex:
+    print(ex)
+    
 finally:
     with open('logs/' + sys.argv[1], 'w', newline='') as outfile:
         writer = csv.writer(outfile)
