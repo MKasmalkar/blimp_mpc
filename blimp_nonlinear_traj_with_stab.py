@@ -450,7 +450,7 @@ try:
 
         u = u_traj
 
-        if time_vec[n] >= 20 or True:            
+        if time_vec[n] >= 20:            
             max_allowable_theta = 0.05
             max_allowable_phi = 0.05
             
