@@ -367,6 +367,7 @@ try:
         max_allowable_wy = 0.02
         max_allowable_vx = 0.5
         max_allowable_vz = 0.5
+        
         Q = np.array([
             [1/max_allowable_theta**2, 0, 0, 0],
             [0, 1/max_allowable_wy**2, 0, 0],
@@ -415,15 +416,23 @@ try:
         # state_dot[:, n+1] = A_lin @ state[:, n].reshape(12) + (B_lin @ u).reshape(12)
         # state[:, n+1] = state[:, n] + dT * state_dot[:, n]
 
-        # ax_3d.cla()
-        # ax_3d.scatter(state[0, 0:n], state[1, 0:n], state[2, 0:n], color='blue', s=100)
-        # ax_3d.scatter(eta_bn_n[0], eta_bn_n[1], eta_bn_n[2], color='m', s=200)
-        # ax_3d.invert_yaxis()
-        # ax_3d.invert_zaxis()
+        ax_3d.cla()
+        ax_3d.scatter(state[0, 0:n], state[1, 0:n], state[2, 0:n], color='blue', s=100)
+        ax_3d.scatter(eta_bn_n[0], eta_bn_n[1], eta_bn_n[2], color='m', s=200)
+        ax_3d.invert_yaxis()
+        ax_3d.invert_zaxis()
 
-        # x_span = ax_3d.get_xlim()[1] - ax_3d.get_xlim()[0]
-        # y_span = ax_3d.get_ylim()[1] - ax_3d.get_ylim()[0]
-        # z_span = ax_3d.get_zlim()[1] - ax_3d.get_zlim()[0]
+        x_span = ax_3d.get_xlim()[1] - ax_3d.get_xlim()[0]
+        y_span = ax_3d.get_ylim()[1] - ax_3d.get_ylim()[0]
+        z_span = ax_3d.get_zlim()[1] - ax_3d.get_zlim()[0]
+
+        ax_3d.set_xlabel('x')
+        ax_3d.set_ylabel('y')
+        ax_3d.set_zlabel('z')
+        ax_3d.set_title('Trajectory')
+        # ax_3d.set_xlim(-0.001, 0.001)
+        # ax_3d.set_ylim(-0.001, 0.001)
+        # ax_3d.set_zlim(-0.001, 0.001)
 
         ax_v.cla()
         ax_v.plot(time_vec[0:n], state[9, 0:n])
@@ -432,42 +441,34 @@ try:
         ax_v.set_xlabel('Time')
         ax_v.legend(['w_x', 'w_y', 'w_z'])
 
-        # ax_or.cla()
-        # blimp_vector_scaling = 2
+        ax_or.cla()
+        blimp_vector_scaling = 2
         
-        # blimp_x_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
-        #                 @ np.array([blimp_vector_scaling, 0, 0]).T
-        # blimp_y_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
-        #                 @ np.array([0, blimp_vector_scaling, 0]).T
-        # blimp_z_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
-        #                 @ np.array([0, 0, blimp_vector_scaling]).T
+        blimp_x_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
+                        @ np.array([blimp_vector_scaling, 0, 0]).T
+        blimp_y_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
+                        @ np.array([0, blimp_vector_scaling, 0]).T
+        blimp_z_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
+                        @ np.array([0, 0, blimp_vector_scaling]).T
     
-        # qx = ax_or.quiver(0, 0, 0, \
-        #         blimp_x_vector[0], blimp_x_vector[1], blimp_x_vector[2], \
-        #         color='r')
-        # qx.ShowArrowHead = 'on'
-        # qy = ax_or.quiver(0, 0, 0, \
-        #         blimp_y_vector[0], blimp_y_vector[1], blimp_y_vector[2], \
-        #         color='g')
-        # qy.ShowArrowHead = 'on'
-        # qz = ax_or.quiver(0, 0, 0, \
-        #         blimp_z_vector[0], blimp_z_vector[1], blimp_z_vector[2], \
-        #         color='b')
-        # qz.ShowArrowHead = 'on'
+        qx = ax_or.quiver(0, 0, 0, \
+                blimp_x_vector[0], blimp_x_vector[1], blimp_x_vector[2], \
+                color='r')
+        qx.ShowArrowHead = 'on'
+        qy = ax_or.quiver(0, 0, 0, \
+                blimp_y_vector[0], blimp_y_vector[1], blimp_y_vector[2], \
+                color='g')
+        qy.ShowArrowHead = 'on'
+        qz = ax_or.quiver(0, 0, 0, \
+                blimp_z_vector[0], blimp_z_vector[1], blimp_z_vector[2], \
+                color='b')
+        qz.ShowArrowHead = 'on'
 
-        # ax_or.set_xlim(-1.5, 1.5)
-        # ax_or.set_ylim(-1.5, 1.5)
-        # ax_or.set_zlim(-1.5, 1.5)
-        # ax_or.invert_yaxis()
-        # ax_or.invert_zaxis()
-
-        # ax_3d.set_xlabel('x')
-        # ax_3d.set_ylabel('y')
-        # ax_3d.set_zlabel('z')
-        # ax_3d.set_title('Trajectory')
-        # ax_3d.set_xlim(-0.001, 0.001)
-        # ax_3d.set_ylim(-0.001, 0.001)
-        # ax_3d.set_zlim(-0.001, 0.001)
+        ax_or.set_xlim(-1.5, 1.5)
+        ax_or.set_ylim(-1.5, 1.5)
+        ax_or.set_zlim(-1.5, 1.5)
+        ax_or.invert_yaxis()
+        ax_or.invert_zaxis()
 
         ax_pos.cla()
         ax_pos.plot(time_vec[0:n], state[0, 0:n])
@@ -476,10 +477,10 @@ try:
         ax_pos.legend(['x', 'y', 'z'])
 
         ax_att.cla()
-        #ax_att.plot(time_vec[0:n], state[3, 0:n])
+        ax_att.plot(time_vec[0:n], state[3, 0:n])
         ax_att.plot(time_vec[0:n], state[4, 0:n])
-        #ax_att.plot(time_vec[0:n], state[5, 0:n])
-        ax_att.legend(['theta'])
+        ax_att.plot(time_vec[0:n], state[5, 0:n])
+        ax_att.legend(['phi', 'theta', 'psi'])
         
         ax_forces.cla()
         ax_forces.plot(time_vec[0:n], fx_history[0:n])
