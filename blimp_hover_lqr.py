@@ -262,12 +262,13 @@ ax_3d.grid()
 ax_or = fig.add_subplot(321, projection='3d')
 ax_or.grid()
 
-ax_pos = fig.add_subplot(324)
-ax_att = fig.add_subplot(323)
+ax_xy = fig.add_subplot(323)
+
+ax_zd = fig.add_subplot(324)
 
 ax_v = fig.add_subplot(325)
 
-ax_forces = fig.add_subplot(326)
+ax_w = fig.add_subplot(326)
 
 plt.subplots_adjust(hspace=1.0)
 
@@ -337,55 +338,87 @@ try:
         # eta_bn_n[3] = 0
         # eta_bn_n[5] = 0
 
+        # A_lin = np.array([
+        #     [0, 1, 0, 0],
+        #     [-0.154, -0.0168, 3.9e-4, 0.495*v_x__b],
+        #     [0.00304, 3.33e-4, -0.0249, -0.00979*v_x__b],
+        #     [0, 0.615*v_x__b, 0, -0.064]
+        # ])
+
+        # B_lin = np.array([
+        #     [0, 0],
+        #     [0.0398, 0],
+        #     [2.1661, 0],
+        #     [0, 1.3335]
+        # ])
+
+        # max_allowable_theta = 0.05
+        # max_allowable_wy = 0.02
+        # max_allowable_vx = 0.5
+        # max_allowable_vz = 0.5
+        
+        # Q = np.array([
+        #     [1/max_allowable_theta**2, 0, 0, 0],
+        #     [0, 1/max_allowable_wy**2, 0, 0],
+        #     [0, 0, 1/max_allowable_vx**2, 0],
+        #     [0, 0, 0, 1/max_allowable_vz**2]
+        # ])
+        # R = np.eye(2)
+
         # K = control.lqr(A_lin, B_lin, Q, R)[0]
-        # u = -(K @ state[:, n].reshape((12, 1))).reshape((4, 1))
-        
-        # u = np.array([0, 0, 0, 0]).reshape((4,1))
 
-        # K = np.array([-3.5867, 4.8598])
-        # f_x_th = -K @ np.array([theta, theta_dot]).reshape((2, 1))
-        # u = np.array([f_x_th.item(), 0, 0, 0]).reshape((4,1))
-    
-        # K = np.array([[1.7508, 18.8141, 0.0510, 0],
-        #               [0, 0, 0, 0.3270]])
-        
-        A_lin = np.array([
-            [0, 1, 0, 0],
-            [-0.154, -0.0168, 3.9e-4, 0.495*v_x__b],
-            [0.00304, 3.33e-4, -0.0249, -0.00979*v_x__b],
-            [0, 0.615*v_x__b, 0, -0.064]
-        ])
-
-        B_lin = np.array([
-            [0, 0],
-            [0.0398, 0],
-            [2.1661, 0],
-            [0, 1.3335]
-        ])
+        # f_out = -K @ np.array([theta, theta_dot, v_x__b, v_z__b]).reshape((4,1))
+        # u = np.array([f_out[0].item(), 0, f_out[1].item(), 0]).reshape(4,1)
 
         max_allowable_theta = 0.05
-        max_allowable_wy = 0.02
-        max_allowable_vx = 0.5
-        max_allowable_vz = 0.5
+        max_allowable_phi = 0.05
         
+        max_allowable_wy = 0.02
+        max_allowable_wx = 0.02
+
+        max_allowable_vx = 0.5
+        max_allowable_vy = 0.5
+
+        max_allowable_vz = 0.5
+
         Q = np.array([
-            [1/max_allowable_theta**2, 0, 0, 0],
-            [0, 1/max_allowable_wy**2, 0, 0],
-            [0, 0, 1/max_allowable_vx**2, 0],
-            [0, 0, 0, 1/max_allowable_vz**2]
+            [1/max_allowable_theta**2, 0, 0, 0, 0, 0, 0],
+            [0, 1/max_allowable_wy**2, 0, 0, 0, 0, 0],
+            [0, 0, 1/max_allowable_phi**2, 0, 0, 0, 0],
+            [0, 0, 0, 1/max_allowable_wx**2, 0, 0, 0],
+            [0, 0, 0, 0, 1/max_allowable_vx**2, 0, 0],
+            [0, 0, 0, 0, 0, 1/max_allowable_vy**2, 0],
+            [0, 0, 0, 0, 0, 0, 1/max_allowable_vz**2]
         ])
-        R = np.eye(2)
+
+        R = np.eye(3)
+
+        A_lin = np.array([
+            [0, np.cos(phi), -1*w_y__b*np.sin(phi), 0, 0, 0, 0],
+            [-0.154*np.cos(theta), 0.00979*v_z__b-0.0168, 0, 0, 0.495*v_z__b+3.9e-4, 0, 0.495*v_x__b+0.00979*w_y__b],
+            [-(w_y__b*np.sin(phi))/(np.sin(theta)**2-1), np.sin(phi)*np.tan(theta), w_y__b*np.cos(phi)*np.tan(theta), 1, 0, 0, 0],
+            [0.154*np.sin(phi)*np.sin(theta), 0, -0.154*np.cos(phi)*np.cos(theta), 0.00979*v_z__b-0.0168, 0, -0.495*v_z__b-3.9e-4, 0.00979*w_x__b-0.495*v_y__b],
+            [0, -1.62*v_z__b, 0, 0,-0.0249, 0, -1.62*w_y__b],
+            [0, 0, 0, 1.62*v_z__b, 0, -0.0249, 1.62*w_x__b],
+            [0, 0.615*v_x__b+0.0244*w_y__b, 0, 0.0244*w_x__b-0.615*v_y__b, 0.615*w_y__b, -0.615*w_x__b, -0.064]
+        ])
+        
+        B_lin = np.array([
+            [0, 0, 0],
+            [0.0398, 0, 0],
+            [0, 0, 0],
+            [0, -0.0398, 0],
+            [2.17, 0, 0],
+            [0, 2.17, 0],
+            [0, 0, 1.33]
+        ])
 
         K = control.lqr(A_lin, B_lin, Q, R)[0]
-
-        f_out = -K @ np.array([theta, theta_dot, v_x__b, v_z__b]).reshape((4,1))
-        u = np.array([f_out[0].item(), 0, f_out[1].item(), 0]).reshape(4,1)
-
-        # u = np.array([0.3, 0, 0, 0]).reshape((4,1))
-
-        # u[0] = max(-max_acceptable_fx, min(max_acceptable_fx, u[0]))
-        # u[1] = max(-max_acceptable_fy, min(max_acceptable_fy, u[1]))
-        # u[2] = max(-max_acceptable_fz, min(max_acceptable_fz, u[2]))
+        f_out = -K @ np.array([theta, w_y__b, phi, w_x__b, v_x__b, v_y__b, v_z__b]).reshape((7, 1))
+        u_swing = np.array([f_out[0].item(),
+                            f_out[1].item(),
+                            f_out[2].item(), 0]).reshape((4, 1))
+        u = u_swing
 
         f_x = u[0].item()
         f_z = u[2].item()
@@ -422,44 +455,28 @@ try:
         ax_3d.invert_yaxis()
         ax_3d.invert_zaxis()
 
-        x_span = ax_3d.get_xlim()[1] - ax_3d.get_xlim()[0]
-        y_span = ax_3d.get_ylim()[1] - ax_3d.get_ylim()[0]
-        z_span = ax_3d.get_zlim()[1] - ax_3d.get_zlim()[0]
-
-        ax_3d.set_xlabel('x')
-        ax_3d.set_ylabel('y')
-        ax_3d.set_zlabel('z')
-        ax_3d.set_title('Trajectory')
-        # ax_3d.set_xlim(-0.001, 0.001)
-        # ax_3d.set_ylim(-0.001, 0.001)
-        # ax_3d.set_zlim(-0.001, 0.001)
-
-        ax_v.cla()
-        ax_v.plot(time_vec[0:n], state[9, 0:n])
-        ax_v.plot(time_vec[0:n], state[10, 0:n])
-        ax_v.plot(time_vec[0:n], state[11, 0:n])
-        ax_v.set_xlabel('Time')
-        ax_v.legend(['w_x', 'w_y', 'w_z'])
-
         ax_or.cla()
-        blimp_vector_scaling = 2
+
+        x_mag = 2
+        y_mag = 2
+        z_mag = 2
         
         blimp_x_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
-                        @ np.array([blimp_vector_scaling, 0, 0]).T
+                        @ np.array([x_mag, 0, 0]).T
         blimp_y_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
-                        @ np.array([0, blimp_vector_scaling, 0]).T
+                        @ np.array([0, y_mag, 0]).T
         blimp_z_vector = R_b__n(eta_bn_n[3], eta_bn_n[4], eta_bn_n[5]) \
-                        @ np.array([0, 0, blimp_vector_scaling]).T
+                        @ np.array([0, 0, z_mag]).T
     
-        qx = ax_or.quiver(0, 0, 0, \
+        qx = ax_or.quiver(eta_bn_n[0], eta_bn_n[1], eta_bn_n[2], \
                 blimp_x_vector[0], blimp_x_vector[1], blimp_x_vector[2], \
                 color='r')
         qx.ShowArrowHead = 'on'
-        qy = ax_or.quiver(0, 0, 0, \
+        qy = ax_or.quiver(eta_bn_n[0], eta_bn_n[1], eta_bn_n[2], \
                 blimp_y_vector[0], blimp_y_vector[1], blimp_y_vector[2], \
                 color='g')
         qy.ShowArrowHead = 'on'
-        qz = ax_or.quiver(0, 0, 0, \
+        qz = ax_or.quiver(eta_bn_n[0], eta_bn_n[1], eta_bn_n[2], \
                 blimp_z_vector[0], blimp_z_vector[1], blimp_z_vector[2], \
                 color='b')
         qz.ShowArrowHead = 'on'
@@ -470,22 +487,42 @@ try:
         ax_or.invert_yaxis()
         ax_or.invert_zaxis()
 
-        ax_pos.cla()
-        ax_pos.plot(time_vec[0:n], state[0, 0:n])
-        ax_pos.plot(time_vec[0:n], state[1, 0:n])
-        ax_pos.plot(time_vec[0:n], state[2, 0:n])
-        ax_pos.legend(['x', 'y', 'z'])
+        ax_3d.set_xlabel('x')
+        ax_3d.set_ylabel('y')
+        ax_3d.set_zlabel('z')
+        ax_3d.set_title('Trajectory')
+        # ax_3d.set_xlim(-0.001, 0.001)
+        # ax_3d.set_ylim(-0.001, 0.001)
+        # ax_3d.set_zlim(-0.001, 0.001)
 
-        ax_att.cla()
-        ax_att.plot(time_vec[0:n], state[3, 0:n])
-        ax_att.plot(time_vec[0:n], state[4, 0:n])
-        ax_att.plot(time_vec[0:n], state[5, 0:n])
-        ax_att.legend(['phi', 'theta', 'psi'])
-        
-        ax_forces.cla()
-        ax_forces.plot(time_vec[0:n], fx_history[0:n])
-        ax_forces.plot(time_vec[0:n], fz_history[0:n])
-        ax_forces.legend(['fx', 'fz'])
+        ax_xy.cla()
+        ax_xy.plot(time_vec[0:n], state[0, 0:n])
+        ax_xy.plot(time_vec[0:n], state[1, 0:n])
+        ax_xy.plot(time_vec[0:n], state[2, 0:n])
+        ax_xy.legend(['x', 'y', 'z'])
+        ax_xy.set_title('Position')
+
+        ax_zd.cla()
+        ax_zd.plot(time_vec[0:n], state[3, 0:n] * 180/np.pi)
+        ax_zd.plot(time_vec[0:n], state[4, 0:n] * 180/np.pi)
+        ax_zd.plot(time_vec[0:n], state[5, 0:n] * 180/np.pi)
+        ax_zd.set_ylim(-20, 20)
+        ax_zd.legend(['phi', 'theta', 'psi'])
+        ax_zd.set_title('Pitch/roll')
+
+        ax_v.cla()
+        ax_v.plot(time_vec[0:n], state[6, 0:n])
+        ax_v.plot(time_vec[0:n], state[7, 0:n])
+        ax_v.plot(time_vec[0:n], state[8, 0:n])
+        ax_v.legend(['vx', 'vy', 'vz'])
+        ax_v.set_title('Velocity')
+
+        ax_w.cla()
+        ax_w.plot(time_vec[0:n], state[9, 0:n])
+        ax_w.plot(time_vec[0:n], state[10, 0:n])
+        ax_w.plot(time_vec[0:n], state[11, 0:n])
+        ax_w.legend(['wx', 'wy', 'wz'])
+        ax_w.set_title('Omega')
 
         plt.draw()
         plt.pause(0.001)
