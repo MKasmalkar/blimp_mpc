@@ -14,6 +14,9 @@ dT = 0.05
 
 ## Simulation
 
+my_blimp = Blimp()
+B_lin = my_blimp.B
+
 # Time
 TRACKING_TIME = 20
 SETTLE_TIME = 100
@@ -29,7 +32,7 @@ y0 = 0
 z0 = 0
 
 phi0 = 0
-theta0 = 0
+theta0 = 10*np.pi/180
 psi0 = 0
 
 v_x0 = 0.0
@@ -54,7 +57,7 @@ fx_history = np.empty(len(time_vec))
 fz_history = np.empty(len(time_vec))
 
 # Controls
-ctrl = SwingReducingController(dT)
+ctrl = NestedPID(dT)
 
 # Set up figure
 
@@ -105,20 +108,7 @@ try:
         theta_dot = state_dot[4, n]
         psi_dot = state_dot[5, n]
         
-        reference = np.array([[1],
-                              [1],
-                              [0],
-                              [0],
-                              [0],
-                              [0],
-                              [0],
-                              [0],
-                              [0],
-                              [0],
-                              [0],
-                              [0]])
-        
-        u = ctrl.get_ctrl_input(state[:, n], state_dot[:, n], reference)
+        u = ctrl.get_ctrl_input(state[:, n].reshape((12,1)))
         fx_history[n] = u[0]
         fz_history[n] = u[2]
 
@@ -141,10 +131,10 @@ try:
 
         state[:, n+1] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
         state_dot[:, n+1] = ((state[:, n+1] - state[:, n]) / dT).reshape(N)
-
+        
         ax_3d.cla()
         ax_3d.scatter(state[0, 0:n], state[1, 0:n], state[2, 0:n], color='blue', s=100)
-        ax_3d.scatter(eta_bn_n[0], eta_bn_n[1], eta_bn_n[2], color='m', s=200)
+        ax_3d.scatter(state[0, n], state[1, n], state[2, n], color='m', s=200)
         ax_3d.invert_yaxis()
         ax_3d.invert_zaxis()
 
@@ -153,11 +143,11 @@ try:
         z_span = ax_3d.get_zlim()[1] - ax_3d.get_zlim()[0]
 
         ax_v.cla()
-        ax_v.plot(time_vec[0:n], state[6, 0:n])
-        ax_v.plot(time_vec[0:n], state[7, 0:n])
-        ax_v.plot(time_vec[0:n], state[8, 0:n])
+        ax_v.plot(time_vec[0:n], state[9, 0:n])
+        ax_v.plot(time_vec[0:n], state[10, 0:n])
+        ax_v.plot(time_vec[0:n], state[11, 0:n])
         ax_v.set_xlabel('Time')
-        ax_v.legend(['v_x', 'v_y', 'v_z'])
+        ax_v.legend(['w_x', 'w_y', 'w_z'])
 
         ax_or.cla()
         blimp_vector_scaling = 2

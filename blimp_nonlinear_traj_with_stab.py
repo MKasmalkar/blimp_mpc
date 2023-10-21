@@ -4,9 +4,11 @@ import control
 from rta.blimp import Blimp
 import scipy
 import sys
+import traceback
 import csv
 from operators import *
 from parameters import *
+from controllers import *
 
 if len(sys.argv) < 2:
     print("Please run with output file as argument")
@@ -15,6 +17,9 @@ if len(sys.argv) < 2:
 ## Constants
 N = 12
 dT = 0.05
+
+Umax = [0.01, 0.01, 0.01, np.Inf]
+Umin = [-0.01, -0.01, -0.01, -np.Inf]
 
 # Time
 TRACKING_TIME = 20
@@ -74,6 +79,9 @@ u_log = np.empty((4, len(time_vec)))
 
 error = np.empty((2, 4, len(time_vec)))
 
+## Initialize controller
+ctrl = LinearizedAttitudeLQR(dT)
+
 ## Set up figure
 
 fig = plt.figure()
@@ -87,6 +95,7 @@ ax_zd = fig.add_subplot(324)
 ax_v = fig.add_subplot(325)
 ax_w = fig.add_subplot(326)
 
+plt.subplots_adjust(wspace=0.5)
 plt.subplots_adjust(hspace=1)
 
 try:
@@ -166,64 +175,24 @@ try:
 
         u_traj = Binv @ (q - A)
 
-        u = u_traj
-
         ## Swing stabilization controller
 
-        if time_vec[n] >= 20:            
-            max_allowable_theta = 0.05
-            max_allowable_phi = 0.05
-            
-            max_allowable_wy = 0.02
-            max_allowable_wx = 0.02
+        if time_vec[n] < 20 or True:
+            u = u_traj
+        else:
+            u_swing = ctrl.get_ctrl_input(state[:, n])
+            u = u_traj + u_swing
 
-            max_allowable_vx = 0.5
-            max_allowable_vy = 0.5
-
-            max_allowable_vz = 0.5
-
-            Q = np.array([
-                [1/max_allowable_theta**2, 0, 0, 0, 0, 0, 0],
-                [0, 1/max_allowable_wy**2, 0, 0, 0, 0, 0],
-                [0, 0, 1/max_allowable_phi**2, 0, 0, 0, 0],
-                [0, 0, 0, 1/max_allowable_wx**2, 0, 0, 0],
-                [0, 0, 0, 0, 1/max_allowable_vx**2, 0, 0],
-                [0, 0, 0, 0, 0, 1/max_allowable_vy**2, 0],
-                [0, 0, 0, 0, 0, 0, 1/max_allowable_vz**2]
-            ])
-
-            R = np.eye(3)
-
-            A_lin = np.array([
-                [0, np.cos(phi), -1*w_y__b*np.sin(phi), 0, 0, 0, 0],
-                [-0.154*np.cos(theta), 0.00979*v_z__b-0.0168, 0, 0, 0.495*v_z__b+3.9e-4, 0, 0.495*v_x__b+0.00979*w_y__b],
-                [-(w_y__b*np.sin(phi))/(np.sin(theta)**2-1), np.sin(phi)*np.tan(theta), w_y__b*np.cos(phi)*np.tan(theta), 1, 0, 0, 0],
-                [0.154*np.sin(phi)*np.sin(theta), 0, -0.154*np.cos(phi)*np.cos(theta), 0.00979*v_z__b-0.0168, 0, -0.495*v_z__b-3.9e-4, 0.00979*w_x__b-0.495*v_y__b],
-                [0, -1.62*v_z__b, 0, 0,-0.0249, 0, -1.62*w_y__b],
-                [0, 0, 0, 1.62*v_z__b, 0, -0.0249, 1.62*w_x__b],
-                [0, 0.615*v_x__b+0.0244*w_y__b, 0, 0.0244*w_x__b-0.615*v_y__b, 0.615*w_y__b, -0.615*w_x__b, -0.064]
-            ])
-            
-            B_lin = np.array([
-                [0, 0, 0],
-                [0.0398, 0, 0],
-                [0, 0, 0],
-                [0, -0.0398, 0],
-                [2.17, 0, 0],
-                [0, 2.17, 0],
-                [0, 0, 1.33]
-            ])
-
-            K = control.lqr(A_lin, B_lin, Q, R)[0]
-            f_out = -K @ np.array([theta, w_y__b, phi, w_x__b, v_x__b, v_y__b, v_z__b]).reshape((7, 1))
-            u_swing = np.array([f_out[0].item(),
-                                f_out[1].item(),
-                                f_out[2].item(), 0]).reshape((4, 1))
-            u += u_swing
+        # u_sat = np.array([min(Umax[i], max(Umin[i], u[i][0])) for i in range(4)]).reshape((4,1))
 
         u_log[:, n] = u.reshape(4)
         
-        tau_B = np.array([u[0], u[1], u[2], -r_z_tg__b * u[1], r_z_tg__b * u[0], u[3]])
+        tau_B = np.array([u[0],
+                          u[1],
+                          u[2],
+                          -r_z_tg__b * u[1],
+                          r_z_tg__b * u[0],
+                          u[3]])
         
         # Restoration torque
         fg_B = R_b__n_inv(phi, theta, psi) @ fg_n
@@ -291,13 +260,15 @@ try:
         ax_err.set_xlabel('Time')
         ax_err.set_ylabel('Error')
         ax_err.legend(['x', 'y', 'z', 'psi'])
-        ax_err.set_title('Error')
-
+        ax_err.set_title('Tracking Error')
+        
         ax_zd.cla()
         ax_zd.plot(time_vec[0:n], state[3, 0:n] * 180/np.pi)
         ax_zd.plot(time_vec[0:n], state[4, 0:n] * 180/np.pi)
         ax_zd.legend(['phi', 'theta'])
         ax_zd.set_title('Pitch/roll')
+        ax_zd.set_xlabel('Time')
+        ax_zd.set_ylabel('Degrees')
 
         ax_v.cla()
         ax_v.plot(time_vec[0:n], state[6, 0:n])
@@ -305,12 +276,17 @@ try:
         ax_v.plot(time_vec[0:n], state[8, 0:n])
         ax_v.legend(['vx', 'vy', 'vz'])
         ax_v.set_title('Velocity')
+        ax_v.set_xlabel('Time')
+        ax_v.set_ylabel('m/s')
 
         ax_w.cla()
         ax_w.plot(time_vec[0:n], state[9, 0:n])
         ax_w.plot(time_vec[0:n], state[10, 0:n])
-        ax_w.legend(['wx', 'wy'])
+        ax_w.plot(time_vec[0:n], state[11, 0:n])
+        ax_w.legend(['wx', 'wy', 'wz'])
         ax_w.set_title('Omega')
+        ax_w.set_xlabel('Time')
+        ax_w.set_ylabel('rad/s')
 
         plt.draw()
         plt.pause(0.00000000001)
@@ -321,7 +297,7 @@ except KeyboardInterrupt:
     plt.show(block=True)
 
 except Exception as ex:
-    print(ex)
+    print(traceback.format_exc())
     
 finally:
     with open('logs/' + sys.argv[1], 'w', newline='') as outfile:
