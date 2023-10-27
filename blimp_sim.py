@@ -14,12 +14,12 @@ import numpy as np
 
 ## PARAMETERS
 
-dT = 0.01
+dT = 0.05
 STOP_TIME = 1
 
-WINDOW_TITLE = 'Discrete'
+WINDOW_TITLE = 'Linear'
 
-Simulator = DiscreteBlimpSim
+Simulator = LinearBlimpSim
 Controller = TestController
 
 ## SIMULATION
