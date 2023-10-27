@@ -17,21 +17,21 @@ class NonlinearBlimpSim(BlimpSim):
                             r_z_tg__b * u[0],
                             u[3]]).reshape((6,1))
         
-        x = self.state[self.idx['x']]
-        y = self.state[self.idx['y']]
-        z = self.state[self.idx['z']]
-        phi = self.state[self.idx['phi']]
-        theta = self.state[self.idx['theta']]
-        psi = self.state[self.idx['psi']]
+        x = self.get_var('x')
+        y = self.get_var('y')
+        z = self.get_var('z')
+        phi = self.get_var('phi')
+        theta = self.get_var('theta')
+        psi = self.get_var('psi')
 
         eta_bn_n = np.array([x, y, z, phi, theta, psi]).reshape((6,1))
 
-        vx = self.state[self.idx['vx']]
-        vy = self.state[self.idx['vy']]
-        vz = self.state[self.idx['vz']]
-        wx = self.state[self.idx['wx']]
-        wy = self.state[self.idx['wy']]
-        wz = self.state[self.idx['wz']]
+        vx = self.get_var('vx')
+        vy = self.get_var('vy')
+        vz = self.get_var('vz')
+        wx = self.get_var('wx')
+        wy = self.get_var('wy')
+        wz = self.get_var('wz')
 
         nu_bn_b = np.array([vx, vy, vz, wx, wy, wz]).reshape((6,1))
 

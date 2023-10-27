@@ -29,9 +29,6 @@ def C(M, nu):
 ## Rotation matrices
 
 def R_b__n(phi, theta, psi):
-    phi = phi.item()
-    theta = theta.item()
-    psi = psi.item()
 
     x_rot = np.array([[1,         0,           0],
                       [0,       np.cos(phi),   -np.sin(phi)],
@@ -49,18 +46,13 @@ def R_b__n(phi, theta, psi):
     return z_rot @ y_rot @ x_rot
 
 def R_b__n_inv(phi, theta, psi):
-    phi = phi.item()
-    theta = theta.item()
-    psi = psi.item()
 
     return np.array([[np.cos(psi)*np.cos(theta), np.cos(theta)*np.sin(psi), -np.sin(theta)],
                      [np.cos(psi)*np.sin(phi)*np.sin(theta) - np.cos(phi)*np.sin(psi), np.cos(phi)*np.cos(psi) + np.sin(phi)*np.sin(psi)*np.sin(theta), np.cos(theta)*np.sin(phi)],
                      [np.sin(phi)*np.sin(psi) + np.cos(phi)*np.cos(psi)*np.sin(theta), np.cos(phi)*np.sin(psi)*np.sin(theta) - np.cos(psi)*np.sin(phi), np.cos(phi)*np.cos(theta)]])
 
 def T(phi, theta):
-    phi = phi.item()
-    theta = theta.item()
-
+    
     return np.array([[1,     np.sin(phi)*np.tan(theta),      np.cos(phi)*np.tan(theta)],
                      [0,          np.cos(phi),                   -np.sin(phi)],
                      [0,     np.sin(phi)/np.cos(theta),      np.cos(phi)/np.cos(theta)]])
