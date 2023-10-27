@@ -32,7 +32,7 @@ y0 = 0
 z0 = 0
 
 phi0 = 0
-theta0 = 10*np.pi/180
+theta0 = 5*np.pi/180
 psi0 = 0
 
 v_x0 = 0.0
@@ -129,9 +129,14 @@ try:
         eta_bn_n = eta_bn_n + eta_bn_n_dot * dT
         nu_bn_b = nu_bn_b + nu_bn_b_dot * dT
 
-        state[:, n+1] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
-        state_dot[:, n+1] = ((state[:, n+1] - state[:, n]) / dT).reshape(N)
+        #state[:, n+1] = np.vstack((eta_bn_n, nu_bn_b)).reshape(N)
+        # state_dot[:, n+1] = ((state[:, n+1] - state[:, n]) / dT).reshape(N)
         
+        A_lin = my_blimp.jacobian_np(state[:, n].reshape((12,1)))
+        state[:, n+1] = state[:, n] + dT * (A_lin @ state[:, n].reshape(12) \
+                                     + B_lin @ u.reshape(4)).reshape(12)
+        state_dot[:, n+1] = ((state[:, n+1] - state[:, n]) / dT).reshape(12)
+
         ax_3d.cla()
         ax_3d.scatter(state[0, 0:n], state[1, 0:n], state[2, 0:n], color='blue', s=100)
         ax_3d.scatter(state[0, n], state[1, n], state[2, n], color='m', s=200)

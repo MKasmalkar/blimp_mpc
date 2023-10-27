@@ -72,7 +72,7 @@ def T(phi, theta):
 
 ## Constants
 N = 12
-dT = 0.05
+dT = 0.01
 
 ## Zero dynamics compensation
 
@@ -226,14 +226,14 @@ max_acceptable_wx = 0.1
 Q = np.array([[0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
               [0, 0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
               [0, 0, 0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 1/max_acceptable_phi**2, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 1/max_acceptable_theta**2, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 1/max_acceptable_wy**2, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 1/max_acceptable_wx**2, 0, 0, 0, 0, 0, 0, 0],
               [0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0, 0, 0],
               [0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0, 0],
               [0, 0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0],
               [0, 0, 0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wx**2, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wy**2, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_phi**2, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_theta**2, 0],
               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.000001]])
 
 # Q[7][11] = 1
@@ -254,7 +254,7 @@ R = np.array([[1/max_acceptable_fx**2, 0, 0 ,0],
 
 # Set up figure
 
-fig = plt.figure()
+fig = plt.figure('Full Dynamics LQR')
 ax_3d = fig.add_subplot(322, projection='3d')
 plt.ion()
 ax_3d.grid()
@@ -310,111 +310,22 @@ try:
         w_y_dot = state_dot[10, n]
         w_z_dot = state_dot[11, n]
 
-        # # Set x, y, z = 0
-        # state[0, n] = 0
-        # state[1, n] = 0
-        # state[2, n] = 0
-        # eta_bn_n[0] = 0
-        # eta_bn_n[1] = 0
-        # eta_bn_n[2] = 0
+        zd_damp_state = np.array([[v_x__b],
+                                  [v_y__b],
+                                  [v_z__b],
+                                  [w_x__b],
+                                  [w_y__b],
+                                  [w_z__b],
+                                  [x],
+                                  [y],
+                                  [z],
+                                  [phi],
+                                  [theta],
+                                  [psi]])
         
-        # Set vx, vy, vz = 0
-        # state[6, n] = 0
-        # state[7, n] = 0
-        # state[8, n] = 0
-        # nu_bn_b[0] = 0
-        # nu_bn_b[1] = 0
-        # nu_bn_b[2] = 0
-
-        # Set wx, wz = 0
-        # state[9] = 0
-        # state[11] = 0
-        # nu_bn_b[3] = 0
-        # nu_bn_b[5] = 0
-
-        # Set phi, psi = 0
-        # state[3] = 0
-        # state[5] = 0
-        # eta_bn_n[3] = 0
-        # eta_bn_n[5] = 0
-
-        # A_lin = np.array([
-        #     [0, 1, 0, 0],
-        #     [-0.154, -0.0168, 3.9e-4, 0.495*v_x__b],
-        #     [0.00304, 3.33e-4, -0.0249, -0.00979*v_x__b],
-        #     [0, 0.615*v_x__b, 0, -0.064]
-        # ])
-
-        # B_lin = np.array([
-        #     [0, 0],
-        #     [0.0398, 0],
-        #     [2.1661, 0],
-        #     [0, 1.3335]
-        # ])
-
-        # max_allowable_theta = 0.05
-        # max_allowable_wy = 0.02
-        # max_allowable_vx = 0.5
-        # max_allowable_vz = 0.5
-        
-        # Q = np.array([
-        #     [1/max_allowable_theta**2, 0, 0, 0],
-        #     [0, 1/max_allowable_wy**2, 0, 0],
-        #     [0, 0, 1/max_allowable_vx**2, 0],
-        #     [0, 0, 0, 1/max_allowable_vz**2]
-        # ])
-        # R = np.eye(2)
-
-        # K = control.lqr(A_lin, B_lin, Q, R)[0]
-
-        # f_out = -K @ np.array([theta, theta_dot, v_x__b, v_z__b]).reshape((4,1))
-        # u = np.array([f_out[0].item(), 0, f_out[1].item(), 0]).reshape(4,1)
-
-        max_allowable_theta = 0.05
-        max_allowable_phi = 0.05
-        
-        max_allowable_wy = 0.02
-        max_allowable_wx = 0.02
-
-        max_allowable_vx = 0.5
-        max_allowable_vy = 0.5
-
-        max_allowable_vz = 0.5
-
-        Q = np.array([
-            [1/max_allowable_theta**2, 0, 0, 0, 0, 0, 0],
-            [0, 1/max_allowable_wy**2, 0, 0, 0, 0, 0],
-            [0, 0, 1/max_allowable_phi**2, 0, 0, 0, 0],
-            [0, 0, 0, 1/max_allowable_wx**2, 0, 0, 0],
-            [0, 0, 0, 0, 1/max_allowable_vx**2, 0, 0],
-            [0, 0, 0, 0, 0, 1/max_allowable_vy**2, 0],
-            [0, 0, 0, 0, 0, 0, 1/max_allowable_vz**2]
-        ])
-
-        R = np.eye(3)
-
-        A_lin = np.array([
-            [0, np.cos(phi), -1*w_y__b*np.sin(phi), 0, 0, 0, 0],
-            [-0.154*np.cos(theta), 0.00979*v_z__b-0.0168, 0, 0, 0.495*v_z__b+3.9e-4, 0, 0.495*v_x__b+0.00979*w_y__b],
-            [-(w_y__b*np.sin(phi))/(np.sin(theta)**2-1), np.sin(phi)*np.tan(theta), w_y__b*np.cos(phi)*np.tan(theta), 1, 0, 0, 0],
-            [0.154*np.sin(phi)*np.sin(theta), 0, -0.154*np.cos(phi)*np.cos(theta), 0.00979*v_z__b-0.0168, 0, -0.495*v_z__b-3.9e-4, 0.00979*w_x__b-0.495*v_y__b],
-            [0, -1.62*v_z__b, 0, 0,-0.0249, 0, -1.62*w_y__b],
-            [0, 0, 0, 1.62*v_z__b, 0, -0.0249, 1.62*w_x__b],
-            [0, 0.615*v_x__b+0.0244*w_y__b, 0, 0.0244*w_x__b-0.615*v_y__b, 0.615*w_y__b, -0.615*w_x__b, -0.064]
-        ])
-        
-        B_lin = np.array([
-            [0, 0, 0],
-            [0.0398, 0, 0],
-            [0, 0, 0],
-            [0, -0.0398, 0],
-            [2.17, 0, 0],
-            [0, 2.17, 0],
-            [0, 0, 1.33]
-        ])
-
+        A_lin = my_blimp.jacobian_np(zd_damp_state.reshape((12,1)))
         K = control.lqr(A_lin, B_lin, Q, R)[0]
-        f_out = -K @ np.array([theta, w_y__b, phi, w_x__b, v_x__b, v_y__b, v_z__b]).reshape((7, 1))
+        f_out = -K @ zd_damp_state
         u_swing = np.array([f_out[0].item(),
                             f_out[1].item(),
                             f_out[2].item(), 0]).reshape((4, 1))

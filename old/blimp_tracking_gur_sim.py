@@ -72,7 +72,7 @@ umax = np.matrix([[0.005],
                   [0.005],
                   [np.inf]])
 
-N = 10
+N = 10   # time horizon
 blimp_controller = BlimpTrackingGurobi(A_dis,
                                        B_dis,
                                        C,

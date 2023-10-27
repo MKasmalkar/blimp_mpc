@@ -14,6 +14,9 @@ if len(sys.argv) < 2:
     print("Please run with output file as argument")
     sys.exit(0)
 
+my_blimp = Blimp()
+B_lin = my_blimp.B
+
 ## Constants
 N = 12
 dT = 0.05
@@ -177,11 +180,12 @@ try:
 
         ## Swing stabilization controller
 
-        if time_vec[n] < 20 or True:
+        if time_vec[n] < 20:
             u = u_traj
         else:
-            u_swing = ctrl.get_ctrl_input(state[:, n])
+            u_swing = ctrl.get_ctrl_input(state[:, n].reshape((12,1)))
             u = u_traj + u_swing
+            print(u_traj.reshape(4), ' ', u_swing.reshape(4))
 
         # u_sat = np.array([min(Umax[i], max(Umin[i], u[i][0])) for i in range(4)]).reshape((4,1))
 

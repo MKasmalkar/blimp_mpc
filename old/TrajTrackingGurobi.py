@@ -5,7 +5,7 @@ from gurobipy import GRB
 import numpy as np
 import time
 
-class BlimpTrackingGurobi(ModelPredictiveController):
+class TrajTrackingGurobi(ModelPredictiveController):
 
     def __init__(self, base_dir, N):
         super().__init__(base_dir)
@@ -110,11 +110,12 @@ class BlimpTrackingGurobi(ModelPredictiveController):
         self.ic_constraint.rhs = current_state.flatten()
 
         for k in range(self.N):
-            self.error_constraints[k].rhs = reference
+            self.error_constraints[k].rhs = reference[k]
         
         self.m.optimize()
 
         self.check_time('deltaT')
 
         # print(self.m.status)
+        # print(self.u.X)
         return np.matrix(self.u.X[0]).T

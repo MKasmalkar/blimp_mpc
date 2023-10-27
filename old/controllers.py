@@ -116,14 +116,14 @@ class LinearizedDynamicsLQR:
         self.Q = np.array([[0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                            [0, 0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                            [0, 0, 0.000001, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                           [0, 0, 0, 1/max_acceptable_phi**2, 0, 0, 0, 0, 0, 0, 0, 0],
-                           [0, 0, 0, 0, 1/max_acceptable_theta**2, 0, 0, 0, 0, 0, 0, 0],
+                           [0, 0, 0, 1/max_acceptable_wx**2, 0, 0, 0, 0, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 1/max_acceptable_wy**2, 0, 0, 0, 0, 0, 0, 0],
                            [0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0, 0.000001, 0, 0, 0],
-                           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wx**2, 0, 0],
-                           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_wy**2, 0],
+                           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_phi**2, 0, 0],
+                           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1/max_acceptable_theta**2, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.000001]])
     
 
@@ -177,12 +177,12 @@ class NestedPID:
         
         # Used to generate control input (force)
         self.kp_wy = 10
-        self.ki_wy = 100
-        self.kd_wy = 1
+        self.ki_wy = 0
+        self.kd_wy = 10
         
         self.kp_wx = 10
-        self.ki_wx = 100
-        self.kd_wx = 1
+        self.ki_wx = 0
+        self.kd_wx = 10
 
         self.th_sp = 0
         self.ph_sp = 0
