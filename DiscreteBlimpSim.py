@@ -11,8 +11,8 @@ class DiscreteBlimpSim(LinearBlimpSim):
     def update_model(self, u):
         self.u = u
 
-        self.update_A_lin()
-        self.state_dot = (self.A_lin @ self.state).reshape((12,1)) + (self.B_lin @ self.u).reshape((12,1))
-        self.state = self.state + self.state_dot*self.dT
-
+        self.update_A_dis()
+        self.state = np.asarray(self.A_dis @ self.state.reshape((12,1)) + self.B_dis @ self.u.reshape((4,1)))
+        self.state_dot = (self.state.reshape((12,1)) - self.state_history[self.current_timestep].reshape((12,1))) / self.dT
+        
         self.update_history()

@@ -6,7 +6,7 @@ from parameters import *
 class FeedbackLinearizedCtrlHelix(BlimpController):
 
     def __init__(self, dT):
-        super().__init__()
+        super().__init__(dT)
                 
         # Time
         TRACKING_TIME = 20
@@ -189,3 +189,10 @@ class FeedbackLinearizedCtrlHelix(BlimpController):
     
     def get_trajectory(self):
         return (self.traj_x, self.traj_y, self.traj_z)
+    
+    def get_error(self, sim):
+        n = sim.get_current_timestep() + 1
+        return (sim.get_var_history('x') - self.traj_x[0:n],
+                sim.get_var_history('y') - self.traj_y[0:n],
+                sim.get_var_history('z') - self.traj_z[0:n],
+                sim.get_var_history('psi') - self.traj_psi[0:n])

@@ -1,9 +1,12 @@
+from re import L
 from LinearBlimpSim import LinearBlimpSim
 from NonlinearBlimpSim import NonlinearBlimpSim
 from DiscreteBlimpSim import DiscreteBlimpSim
 
 from OriginLQRController import OriginLQRController
 from FeedbackLinearizedCtrlHelix import FeedbackLinearizedCtrlHelix
+from WaypointTrackingMPC import WaypointTrackingMPC
+from TestController import TestController
 
 from BlimpPlotter import BlimpPlotter
 
@@ -11,17 +14,22 @@ import numpy as np
 
 ## PARAMETERS
 
-dT = 0.05
-STOP_TIME = 100
+dT = 0.01
+STOP_TIME = 1
+
+WINDOW_TITLE = 'Discrete'
+
+Simulator = DiscreteBlimpSim
+Controller = TestController
 
 ## SIMULATION
 
-sim = NonlinearBlimpSim(dT)
+sim = Simulator(dT)
 
 plotter = BlimpPlotter()
-plotter.init_plot('Linear')
+plotter.init_plot(WINDOW_TITLE)
 
-ctrl = FeedbackLinearizedCtrlHelix(dT)
+ctrl = Controller(dT)
 ctrl.init_sim(sim)
 
 try:

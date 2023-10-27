@@ -7,18 +7,22 @@ class BlimpPlotter():
         self.plotting = False
 
     def init_plot(self, title):
-        self.fig = plt.figure(title, figsize=(8, 6))
+        self.fig = plt.figure(title, figsize=(12, 7))
         plt.ion()
 
-        self.ax_or = self.fig.add_subplot(321, projection='3d')
-        self.ax_or.grid()
-        self.ax_3d = self.fig.add_subplot(322, projection='3d')
+        gs = self.fig.add_gridspec(3,3)
+
+        self.ax_3d = self.fig.add_subplot(gs[0:2, 2], projection='3d')
         self.ax_3d.grid()
-        
-        self.ax_pos = self.fig.add_subplot(323)
-        self.ax_ang = self.fig.add_subplot(324)
-        self.ax_vel = self.fig.add_subplot(325)
-        self.ax_w = self.fig.add_subplot(326)
+        self.ax_or = self.fig.add_subplot(gs[2, 2], projection='3d')
+        self.ax_or.grid()
+
+        self.ax_pos = self.fig.add_subplot(gs[0, 0])
+        self.ax_vel = self.fig.add_subplot(gs[1, 0])
+        self.ax_ang = self.fig.add_subplot(gs[0, 1])
+        self.ax_w = self.fig.add_subplot(gs[1, 1])
+        self.ax_err_pos = self.fig.add_subplot(gs[2, 0])
+        self.ax_err_ang = self.fig.add_subplot(gs[2, 1])
 
         plt.subplots_adjust(wspace=0.25)
         plt.subplots_adjust(hspace=0.75)
@@ -55,7 +59,8 @@ class BlimpPlotter():
         self.ax_or.set_ylim(-1.5, 1.5)
         self.ax_or.set_zlim(-1.5, 1.5)
         self.ax_or.invert_yaxis()
-        self. ax_or.invert_zaxis()
+        self.ax_or.invert_zaxis()
+        self.ax_or.set_title('Orientation')
 
         self.ax_3d.cla()
 
@@ -106,8 +111,9 @@ class BlimpPlotter():
         self.ax_ang.cla()
         self.ax_ang.plot(sim.get_time_vec(), sim.get_var_history('phi') * 180/np.pi)
         self.ax_ang.plot(sim.get_time_vec(), sim.get_var_history('theta') * 180/np.pi)
-        self.ax_ang.plot(sim.get_time_vec(), sim.get_var_history('psi') * 180/np.pi)
-        self.ax_ang.legend(['phi', 'theta', 'psi'])
+        # self.ax_ang.plot(sim.get_time_vec(), sim.get_var_history('psi') * 180/np.pi)
+        # self.ax_ang.legend(['phi', 'theta', 'psi'])
+        self.ax_ang.legend(['phi', 'theta'])
         self.ax_ang.set_ylabel('deg')
         self.ax_ang.set_title('Angles')
 
@@ -118,6 +124,30 @@ class BlimpPlotter():
         self.ax_w.legend(['wx', 'wy', 'wz'])
         self.ax_w.set_ylabel('deg/s')
         self.ax_w.set_title('Angular Velocity')
+
+        self.ax_err_pos.cla()
+        self.ax_err_ang.cla()
+
+        error = ctrl.get_error(sim)
+        if error != None:
+            error_x = error[0]
+            error_y = error[1]
+            error_z = error[2]
+            error_psi = error[3]
+
+            self.ax_err_pos.plot(sim.get_time_vec(), error_x)
+            self.ax_err_pos.plot(sim.get_time_vec(), error_y)
+            self.ax_err_pos.plot(sim.get_time_vec(), error_z)
+
+            self.ax_err_ang.plot(sim.get_time_vec(), error_psi * 180/np.pi)
+
+        self.ax_err_pos.legend(['x', 'y', 'z'])
+        self.ax_err_pos.set_ylabel('m')
+        self.ax_err_pos.set_title('Position error')
+        
+        self.ax_err_ang.legend(['psi'])
+        self.ax_err_ang.set_ylabel('deg')
+        self.ax_err_ang.set_title('Angle error')
 
         plt.draw()
         plt.pause(0.000000000001)

@@ -63,7 +63,7 @@ class Blimp(Model):
 
     def setup_B(self):
         # This sets up the input matrix.
-        to_4 = np.array([[1, 0, 0, 0, -self.r_b_z_tb, 0],
+        to_4 = np.array([[1, 0, 0, 0, self.r_b_z_tb, 0],
                          [0, 1, 0, self.r_b_z_tb, 0, 0],
                          [0, 0, 1, 0, 0, 0],
                          [0, 0, 0, 0, 0, 1]]).T

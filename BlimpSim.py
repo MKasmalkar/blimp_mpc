@@ -54,10 +54,10 @@ class BlimpSim():
 
     def update_A_dis(self):
         self.update_A_lin()
-        self.A_dis = scipy.linalg.expm(self.A_lin)
+        self.A_dis = scipy.linalg.expm(self.A_lin * self.dT)
         
     def update_A_lin(self):
-        self.A_lin = self.blimp.jacobian_np(self.state)
+        self.A_lin = self.blimp.jacobian_np(self.state.reshape((12,1)))
 
     def get_A_lin(self):
         self.update_A_lin()
