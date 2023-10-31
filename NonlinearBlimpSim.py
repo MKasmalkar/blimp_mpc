@@ -25,7 +25,7 @@ class NonlinearBlimpSim(BlimpSim):
         psi = self.get_var('psi')
 
         eta_bn_n = np.array([x, y, z, phi, theta, psi]).reshape((6,1))
-
+        
         vx = self.get_var('vx')
         vy = self.get_var('vy')
         vz = self.get_var('vz')

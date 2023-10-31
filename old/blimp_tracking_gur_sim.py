@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from rta.blimp import Blimp
 import random
 from BlimpTrackingGurobi import BlimpTrackingGurobi
+import time
 
 dT = 0.25
 
@@ -151,10 +152,6 @@ ax.set_zlabel('y2')
 # go = False
 
 for t in time_vec:
-    
-    print()
-    print("Time t=" + str(t))
-
     y0_vals.append(float(y[0]))
     y1_vals.append(float(y[1]))
     y2_vals.append(float(y[2]))
@@ -163,17 +160,26 @@ for t in time_vec:
     ref1_vals.append(float(reference_points[ref_idx][1]))
     ref2_vals.append(float(reference_points[ref_idx][2]))
 
+    print()
+    start_time = time.time_ns()
     ax.cla()
     ax.scatter(y0_vals, y1_vals, y2_vals, color='b')
+    print(time.time_ns() - start_time)
     ax.scatter(ref0_vals, ref1_vals, ref2_vals, color='r', s=100)
+    print(time.time_ns() - start_time)
     ax.scatter(y0, y1, y2, color='m', s=100)
+    print(time.time_ns() - start_time)
     ax.scatter(y[0], y[1], y[2], color='c', s=75)
+    print(time.time_ns() - start_time)
     ax.set_xlabel("y0")
     ax.set_ylabel('y1')
     ax.set_zlabel('y2')
+    print(time.time_ns() - start_time)
     plt.draw()
+    print(time.time_ns() - start_time)
     plt.pause(0.001)
-    
+    print(time.time_ns() - start_time)
+
     u = blimp_controller.get_tracking_ctrl(x,
                                            reference_points[ref_idx])
 
@@ -192,7 +198,6 @@ for t in time_vec:
 
     error = distance_to_goal(y, reference_points[ref_idx])
     error_vals.append(error)
-    print("Error: " + str(error))
 
     if error < DEADBAND:
         settling_timer -= 1

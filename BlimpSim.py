@@ -10,7 +10,7 @@ class BlimpSim():
     def __init__(self, dT):
         self.dT = dT
 
-        self.idx = {'vx': 0,
+        self.state_idx = {'vx': 0,
                     'vy': 1,
                     'vz': 2,
                     'wx': 3,
@@ -22,6 +22,11 @@ class BlimpSim():
                     'phi': 9,
                     'theta': 10,
                     'psi': 11}
+        
+        self.input_idx = {'fx': 0,
+                          'fy': 1,
+                          'fz': 2,
+                          'tz': 3}
 
         self.current_timestep = 0
 
@@ -52,13 +57,28 @@ class BlimpSim():
     def update_model(self, u):
         pass
 
+    def update_A_lin(self):
+        psi = self.get_var('psi')
+
+        self.A_lin = np.array([
+            [-0.024918743228681705659255385398865, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, -0.024918743228681705659255385398865, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, -0.064008534471213351935148239135742, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, -0.016812636348731757607311010360718, 0, 0, 0, 0, 0, -0.15352534538760664872825145721436, 0, 0],
+            [0, 0, 0, 0, -0.016812636348731757607311010360718, 0, 0, 0, 0, 0, -0.15352534538760664872825145721436, 0],
+            [0, 0, 0, 0, 0, -0.016835595258726243628188967704773, 0, 0, 0, 0, 0, 0],
+            [np.cos(psi), -1.0*np.sin(psi), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [np.sin(psi), np.cos(psi), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0]
+        ])
+    
     def update_A_dis(self):
         self.update_A_lin()
         self.A_dis = scipy.linalg.expm(self.A_lin * self.dT)
-        
-    def update_A_lin(self):
-        self.A_lin = self.blimp.jacobian_np(self.state.reshape((12,1)))
-        
+    
     def get_A_lin(self):
         self.update_A_lin()
         return self.A_lin
@@ -74,24 +94,27 @@ class BlimpSim():
         return self.B_dis
 
     def set_var(self, var, val):
-        self.state[self.idx[var]] = val
+        self.state[self.state_idx[var]] = val
         self.state_history[self.current_timestep] = self.state.reshape(12)
 
     def set_var_dot(self, var, val):
-        self.state_dot[self.idx[var]] = val
+        self.state_dot[self.state_idx[var]] = val
         self.state_dot_history[self.current_timestep] = self.state_dot
 
     def get_var(self, var):
-        return self.state[self.idx[var]].item()
+        return self.state[self.state_idx[var]].item()
     
     def get_var_dot(self, var):
-        return self.state_dot[self.idx[var]].item()
+        return self.state_dot[self.state_idx[var]].item()
     
     def get_var_history(self, var):
-        return self.state_history[:, self.idx[var]]
+        return self.state_history[:, self.state_idx[var]]
     
     def get_var_dot_history(self, var):
-        return self.state_dot_history[:, self.idx[var]]
+        return self.state_dot_history[:, self.state_idx[var]]
+    
+    def get_u_history(self, var):
+        return self.u_history[:, self.input_idx[var]]
     
     def get_state(self):
         return self.state

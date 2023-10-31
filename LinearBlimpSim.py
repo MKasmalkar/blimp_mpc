@@ -12,7 +12,8 @@ class LinearBlimpSim(BlimpSim):
         self.u = u
 
         self.update_A_lin()
-        self.state = self.state + self.state_dot*self.dT
+        
+        self.state = np.asarray(self.state.reshape((12,1)) + (self.state_dot*self.dT).reshape((12,1)))
         self.state_dot = (self.A_lin @ self.state).reshape((12,1)) + (self.B_lin @ self.u).reshape((12,1))
         
         self.update_history()
