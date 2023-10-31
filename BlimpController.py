@@ -3,6 +3,7 @@ class BlimpController():
 
     def __init__(self, dT):
         self.dT = dT
+        self.error_history = None
 
     def get_ctrl_action(self, sim):
         pass

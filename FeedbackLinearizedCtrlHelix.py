@@ -90,6 +90,9 @@ class FeedbackLinearizedCtrlHelix(BlimpController):
         sim.set_var('psi', np.pi/2)
 
     def get_ctrl_action(self, sim):
+
+        sim.start_timer()
+
         n = sim.get_current_timestep()
 
         # Extract state variables
@@ -185,6 +188,8 @@ class FeedbackLinearizedCtrlHelix(BlimpController):
                                 f_out[2].item(), 0]).reshape((4, 1))
             u += u_swing
 
+        sim.end_timer()
+
         return u
     
     def get_trajectory(self):
@@ -196,3 +201,4 @@ class FeedbackLinearizedCtrlHelix(BlimpController):
                 sim.get_var_history('y') - self.traj_y[0:n],
                 sim.get_var_history('z') - self.traj_z[0:n],
                 sim.get_var_history('psi') - self.traj_psi[0:n])
+    

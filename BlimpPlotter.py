@@ -144,7 +144,7 @@ class BlimpPlotter():
             self.ax_err_ang.cla()
 
             error = ctrl.get_error(sim)
-            if error != None:
+            if error is not None:
                 error_x = error[0]
                 error_y = error[1]
                 error_z = error[2]

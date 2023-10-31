@@ -121,7 +121,7 @@ class MPCHelix(BlimpController):
                         lb=-GRB.INFINITY, ub=GRB.INFINITY, name='z')
         self.u = self.m.addMVar(shape=(self.N, self.num_inputs),
                         lb=umin.T, ub=umax.T, name='u')
-
+        
         self.ic_constraint = self.m.addConstr(self.x[0, :] == np.zeros((1, 12)).flatten(), name='ic')
 
         self.dynamics_constraints = []
@@ -155,6 +155,8 @@ class MPCHelix(BlimpController):
         
     def get_ctrl_action(self, sim):
 
+        sim.start_timer()
+
         n = sim.get_current_timestep()
         reference = np.array([
             self.traj_x[n:n+self.N],
@@ -178,6 +180,7 @@ class MPCHelix(BlimpController):
             sim_state[10].item(),
             sim_state[11].item(),
         ])
+
         self.ic_constraint.rhs = state
 
         A_dis = sim.get_A_dis()
@@ -195,6 +198,8 @@ class MPCHelix(BlimpController):
         #print(self.m.status)
         #print(np.round(self.u.X[0].T, 3))
         
+        sim.end_timer()
+
         return np.matrix(self.u.X[0]).T
         
     def get_trajectory(self):
@@ -204,7 +209,9 @@ class MPCHelix(BlimpController):
     
     def get_error(self, sim):
         n = sim.get_current_timestep() + 1
-        return (sim.get_var_history('x') - self.traj_x[0:n],
-                sim.get_var_history('y') - self.traj_y[0:n],
-                sim.get_var_history('z') - self.traj_z[0:n],
-                sim.get_var_history('psi') - self.traj_psi[0:n])
+        return np.array([
+            sim.get_var_history('x') - self.traj_x[0:n],
+            sim.get_var_history('y') - self.traj_y[0:n],
+            sim.get_var_history('z') - self.traj_z[0:n],
+            sim.get_var_history('psi') - self.traj_psi[0:n]
+        ])

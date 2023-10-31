@@ -1,6 +1,8 @@
 import numpy as np
 import scipy
 from rta.blimp import Blimp
+import time
+import csv
 
 from parameters import *
 from operators import *
@@ -40,6 +42,13 @@ class BlimpSim():
         self.state_dot_history = np.zeros((1,12))
         self.u_history = np.zeros((1, 4))
 
+        # The time it took to compute the control input
+        # that led to the current state
+        self.solve_time_history = np.array([0])
+
+        self.start_time = 0
+        self.time_delta = 0
+
         self.blimp = Blimp()
 
         self.update_A_lin()
@@ -74,7 +83,7 @@ class BlimpSim():
             [0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0]
         ])
-    
+
     def update_A_dis(self):
         self.update_A_lin()
         self.A_dis = scipy.linalg.expm(self.A_lin * self.dT)
@@ -92,7 +101,13 @@ class BlimpSim():
     
     def get_B_dis(self):
         return self.B_dis
+    
+    def start_timer(self):
+        self.start_time = time.process_time_ns()
 
+    def end_timer(self):
+        self.time_delta = time.process_time_ns() - self.start_time
+        
     def set_var(self, var, val):
         self.state[self.state_idx[var]] = val
         self.state_history[self.current_timestep] = self.state.reshape(12)
@@ -113,11 +128,20 @@ class BlimpSim():
     def get_var_dot_history(self, var):
         return self.state_dot_history[:, self.state_idx[var]]
     
+    def get_full_u_history(self):
+        return self.u_history
+
     def get_u_history(self, var):
         return self.u_history[:, self.input_idx[var]]
     
     def get_state(self):
         return self.state
+    
+    def get_state_history(self):
+        return self.state_history
+    
+    def get_state_dot_history(self):
+        return self.state_dot_history
     
     def get_state_dot(self):
         return self.state_dot
@@ -143,6 +167,9 @@ class BlimpSim():
     def get_time_vec(self):
         return self.time_vec
     
+    def get_solve_time_history(self):
+        return self.solve_time_history
+    
     def get_current_timestep(self):
         return self.current_timestep
     
@@ -152,7 +179,15 @@ class BlimpSim():
     def update_history(self):
         self.current_timestep += 1
 
+        self.solve_time_history = np.append(self.solve_time_history, self.time_delta)
         self.state_history = np.append(self.state_history, self.state.reshape((1,12)), axis=0)
         self.state_dot_history = np.append(self.state_dot_history, self.state_dot.reshape((1,12)), axis=0)
         self.u_history = np.append(self.u_history, self.u.reshape((1,4)), axis=0)
         self.time_vec = np.append(self.time_vec, self.current_timestep * self.dT)
+
+    def load_data(self, filename):
+        with open('logs/' + filename, 'r') as infile:
+            reader = csv.reader(infile)
+            data_list = list(reader)[1:]
+            data_float = [[float(i) for i in j] for j in data_list]
+            data_np = np.array(data_np)

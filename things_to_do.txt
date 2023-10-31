@@ -1,6 +1,0 @@
-To figure out:
-	Get MPC to work in nonlinear sim
-	Figure out why full dynamics LQR doesn't work
-	compare MPC to fdbk linearized controller
-
-rework codebase

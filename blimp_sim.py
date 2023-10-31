@@ -10,15 +10,20 @@ from TestController import TestController
 from MPCHelix import MPCHelix
 
 from BlimpPlotter import BlimpPlotter
+from BlimpLogger import BlimpLogger
 
 import numpy as np
 import time
 import sys
 
+if len(sys.argv) < 2:
+    print("Please run with output file name as argument.")
+    sys.exit(0)
+
 ## PARAMETERS
 
 dT = 0.25
-STOP_TIME = 120
+STOP_TIME = 1
 PLOT_WAVEFORMS = True
 
 WINDOW_TITLE = 'Nonlinear'
@@ -45,9 +50,13 @@ try:
         if plotter.window_was_closed():
             break
 
-    if not plotter.window_was_closed():
-        plotter.block()
-
 except KeyboardInterrupt:
     print("Done!")
+    sys.exit(0)
 
+finally:
+    logger = BlimpLogger(sys.argv[1])
+    logger.log(sim, ctrl)
+
+    if not plotter.window_was_closed():
+        plotter.block()

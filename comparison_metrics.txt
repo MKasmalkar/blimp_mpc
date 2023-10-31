@@ -1,6 +1,7 @@
-Solve time
-RMS error from trajectory
+*Solve time
+*RMS error from trajectory
+*control effort
+*attitude keeping
+
 RPi vs computer
-control effort
-attitude keeping
 different trajectories
