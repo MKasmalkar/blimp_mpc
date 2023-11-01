@@ -26,9 +26,9 @@ class BlimpLogger:
             state_history = sim.get_state_history()
             state_dot_history = sim.get_state_dot_history()
             u_history = sim.get_full_u_history()
-            error_history = ctrl.get_error(sim).T
+            error_history = ctrl.get_error(sim)
             solve_times = sim.get_solve_time_history().reshape((n, 1))
-
+            
             metadata = np.pad(np.array([sim.dT, sim.get_current_timestep()]), ((0, n-2))).reshape((n,1))
 
             data = np.hstack((time_history,

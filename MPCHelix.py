@@ -214,4 +214,4 @@ class MPCHelix(BlimpController):
             sim.get_var_history('y') - self.traj_y[0:n],
             sim.get_var_history('z') - self.traj_z[0:n],
             sim.get_var_history('psi') - self.traj_psi[0:n]
-        ])
+        ]).T

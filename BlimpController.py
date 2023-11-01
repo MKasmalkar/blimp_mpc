@@ -1,3 +1,5 @@
+import numpy as np
+import csv
 
 class BlimpController():
 
@@ -15,4 +17,14 @@ class BlimpController():
         pass
 
     def get_error(self, sim):
-        pass
+        return self.error_history
+
+    def load_data(self, filename):
+        with open('logs/' + filename, 'r') as infile:
+            reader = csv.reader(infile)
+            data_list = list(reader)[1:]
+            data_float = [[float(i) for i in j] for j in data_list]
+            data_np = np.array(data_float)
+
+            self.dT = data_np[0, 34]
+            self.error_history = data_np[:, 29:33]

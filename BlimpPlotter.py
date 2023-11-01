@@ -29,6 +29,7 @@ class BlimpPlotter():
             self.ax_err_pos = self.fig.add_subplot(gs[2, 0])
             self.ax_err_ang = self.fig.add_subplot(gs[2, 1])
             self.ax_force = self.fig.add_subplot(gs[0, 2])
+            self.ax_solve = self.fig.add_subplot(gs[1, 2])
 
             plt.subplots_adjust(wspace=0.5)
             plt.subplots_adjust(hspace=0.75)
@@ -113,6 +114,7 @@ class BlimpPlotter():
             self.ax_pos.plot(sim.get_time_vec(), sim.get_var_history('z'))
             self.ax_pos.legend(['x', 'y', 'z'])
             self.ax_pos.set_ylabel('m')
+            self.ax_pos.set_xlabel('Time (sec)')
             self.ax_pos.set_title('Position')
 
             self.ax_vel.cla()
@@ -121,6 +123,7 @@ class BlimpPlotter():
             self.ax_vel.plot(sim.get_time_vec(), sim.get_var_history('vz'))
             self.ax_vel.legend(['vx', 'vy', 'vz'])
             self.ax_vel.set_ylabel('m/s')
+            self.ax_vel.set_xlabel('Time (sec)')
             self.ax_vel.set_title('Velocity')
 
             self.ax_ang.cla()
@@ -130,6 +133,7 @@ class BlimpPlotter():
             # self.ax_ang.legend(['phi', 'theta', 'psi'])
             self.ax_ang.legend(['phi', 'theta'])
             self.ax_ang.set_ylabel('deg')
+            self.ax_ang.set_xlabel('Time (sec)')
             self.ax_ang.set_title('Angles')
 
             self.ax_w.cla()
@@ -138,6 +142,7 @@ class BlimpPlotter():
             self.ax_w.plot(sim.get_time_vec(), sim.get_var_history('wz') * 180/np.pi)
             self.ax_w.legend(['wx', 'wy', 'wz'])
             self.ax_w.set_ylabel('deg/s')
+            self.ax_w.set_xlabel('Time (sec)')
             self.ax_w.set_title('Angular Velocity')
 
             self.ax_err_pos.cla()
@@ -145,10 +150,10 @@ class BlimpPlotter():
 
             error = ctrl.get_error(sim)
             if error is not None:
-                error_x = error[0]
-                error_y = error[1]
-                error_z = error[2]
-                error_psi = error[3]
+                error_x = error[:, 0]
+                error_y = error[:, 1]
+                error_z = error[:, 2]
+                error_psi = error[:, 3]
 
                 self.ax_err_pos.plot(sim.get_time_vec(), error_x)
                 self.ax_err_pos.plot(sim.get_time_vec(), error_y)
@@ -158,10 +163,12 @@ class BlimpPlotter():
 
             self.ax_err_pos.legend(['x', 'y', 'z'])
             self.ax_err_pos.set_ylabel('m')
+            self.ax_err_pos.set_xlabel('Time (sec)')
             self.ax_err_pos.set_title('Position error')
             
             self.ax_err_ang.legend(['psi'])
             self.ax_err_ang.set_ylabel('deg')
+            self.ax_err_ang.set_xlabel('Time (sec)')
             self.ax_err_ang.set_title('Angle error')
 
             self.ax_force.cla()
@@ -171,8 +178,15 @@ class BlimpPlotter():
             self.ax_force.plot(sim.get_time_vec(), sim.get_u_history('tz'))
             self.ax_force.legend(['fx', 'fy', 'fz', 'tz'])
             self.ax_force.set_ylabel('N or N-m')
+            self.ax_force.set_xlabel('Time (sec)')
             self.ax_force.set_title('Inputs')
 
+            self.ax_solve.cla()
+            self.ax_solve.plot(sim.get_time_vec(), sim.get_solve_time_history())
+            self.ax_solve.set_ylabel('ns')
+            self.ax_solve.set_xlabel('Time (sec)')
+            self.ax_solve.set_title('Solve time')
+        
         plt.draw()
         plt.pause(0.0000001)
 

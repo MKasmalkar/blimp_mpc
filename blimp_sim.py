@@ -1,4 +1,3 @@
-from re import L
 from LinearBlimpSim import LinearBlimpSim
 from NonlinearBlimpSim import NonlinearBlimpSim
 from DiscreteBlimpSim import DiscreteBlimpSim
@@ -22,9 +21,9 @@ if len(sys.argv) < 2:
 
 ## PARAMETERS
 
-dT = 0.25
-STOP_TIME = 1
-PLOT_WAVEFORMS = True
+dT = 0.05
+STOP_TIME = 120
+PLOT_WAVEFORMS = False
 
 WINDOW_TITLE = 'Nonlinear'
 

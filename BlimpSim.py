@@ -190,4 +190,20 @@ class BlimpSim():
             reader = csv.reader(infile)
             data_list = list(reader)[1:]
             data_float = [[float(i) for i in j] for j in data_list]
-            data_np = np.array(data_np)
+            data_np = np.array(data_float)
+
+            self.time_vec = data_np[:, 0]
+
+            self.current_timestep = int(data_np[1, 34].item())
+
+            self.state_history = data_np[:, 1:13]
+            self.state = self.state_history[self.current_timestep, :]
+   
+            self.state_dot_history = data_np[:, 13:25]
+            self.state_dot = self.state_dot_history[self.current_timestep, :]
+
+            self.u_history = data_np[:, 25:29]
+            self.u = self.u_history[self.current_timestep, :]
+
+            self.solve_time_history = data_np[:, 33]
+            self.dT = data_np[0, 34]
