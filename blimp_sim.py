@@ -23,7 +23,7 @@ if len(sys.argv) < 2:
 
 dT = 0.05
 STOP_TIME = 120
-PLOT_WAVEFORMS = False
+PLOT_WAVEFORMS = True
 
 WINDOW_TITLE = 'Nonlinear'
 

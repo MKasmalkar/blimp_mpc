@@ -3,6 +3,7 @@ from gurobipy import GRB
 import numpy as np
 import time
 from BlimpController import BlimpController
+from parameters import *
 
 class MPCHelix(BlimpController):
 
@@ -124,12 +125,10 @@ class MPCHelix(BlimpController):
         
         self.ic_constraint = self.m.addConstr(self.x[0, :] == np.zeros((1, 12)).flatten(), name='ic')
 
-        self.dynamics_constraints = []
         for k in range(self.N):
             self.m.addConstr(self.y[k, :] == self.C @ self.x[k, :])
-            self.dynamics_constraints.append(
-               self.m.addConstr(self.x[k+1, :] - self.B @ self.u[k, :] == A_dis @ self.x[k, :],
-                                name='dynamics' + str(k)))
+            self.m.addConstr(self.x[k+1, :] - self.B @ self.u[k, :] == A_dis @ self.x[k, :],
+                                name='dynamics' + str(k))
             
         self.error_constraints = []
         for k in range(self.N):
@@ -166,10 +165,24 @@ class MPCHelix(BlimpController):
         ])
 
         sim_state = sim.get_state()
+
+        # A matrix is generated assuming psi = 0
+        # need to perform some rotations to account for this
+
+        psi = sim_state[11].item()
+
+        v_b = np.array([
+            [sim_state[0].item()],
+            [sim_state[1].item()],
+            [sim_state[2].item()]
+        ])
+
+        v_n = R_b__n(0, 0, psi) @ v_b
+
         state = np.array([
-            sim_state[0].item(),
-            sim_state[1].item(),
-            sim_state[2].item(),
+            v_n[0].item(),
+            v_n[1].item(),
+            v_n[2].item(),
             sim_state[3].item(),
             sim_state[4].item(),
             sim_state[5].item(),
@@ -178,29 +191,33 @@ class MPCHelix(BlimpController):
             sim_state[8].item(),
             sim_state[9].item(),
             sim_state[10].item(),
-            sim_state[11].item(),
+            psi
         ])
 
         self.ic_constraint.rhs = state
 
-        A_dis = sim.get_A_dis()
-        
         for k in range(self.N):
             self.error_constraints[k].rhs = reference[:, k]
             
-            self.m.remove(self.dynamics_constraints[k])
-            self.dynamics_constraints[k] = \
-               self.m.addConstr(self.x[k+1, :] == A_dis @ self.x[k, :] + self.B @ self.u[k, :],
-                                name='dynamics' + str(k))
-        
         self.m.optimize()
+
+        u_orig = self.u.X[0].T
+
+        u_rot = R_b__n_inv(0, 0, psi) @ np.array([u_orig[0], u_orig[1], u_orig[2]]).T
+
+        u = np.array([
+            [u_rot[0].item()],
+            [u_rot[1].item()],
+            [u_rot[2].item()],
+            [u_orig[3].item()]
+        ])
 
         #print(self.m.status)
         #print(np.round(self.u.X[0].T, 3))
         
         sim.end_timer()
 
-        return np.matrix(self.u.X[0]).T
+        return u
         
     def get_trajectory(self):
         return (self.traj_x,
