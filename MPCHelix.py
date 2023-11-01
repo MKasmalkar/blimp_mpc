@@ -51,10 +51,12 @@ class MPCHelix(BlimpController):
         self.traj_psi = np.concatenate((self.psi0 + 2*np.pi*f*tracking_time, (self.psi0 + 2*np.pi) * np.ones(len(settle_time))))
     
     def init_sim(self, sim):
+        # Get A matrix corresponding to zero state vector equilibrium position
+        A_dis = sim.get_A_dis()
+        
         sim.set_var('x', self.x0)
         sim.set_var('psi', self.psi0)
 
-        A_dis = sim.get_A_dis()
         self.B = sim.get_B_dis()
 
         self.C = np.matrix([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
