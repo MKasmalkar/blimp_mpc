@@ -40,6 +40,10 @@ plotter.init_plot(WINDOW_TITLE, waveforms=PLOT_WAVEFORMS)
 ctrl = Controller(dT)
 ctrl.init_sim(sim)
 
+if len(sys.argv) > 2:
+    sim.load_data(sys.argv[2])
+    ctrl.load_data(sys.argv[2])
+
 try:
     for n in range(int(STOP_TIME / dT)):
         u = ctrl.get_ctrl_action(sim)

@@ -12,7 +12,7 @@ class MPCHelix(BlimpController):
 
         self.order = 12
         self.num_inputs = 4
-        self.num_outputs = 4
+        self.num_outputs = 6
         
         # Time
         TRACKING_TIME = 20
@@ -49,6 +49,9 @@ class MPCHelix(BlimpController):
         self.traj_y = np.concatenate((self.At * np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
         self.traj_z = np.concatenate((tracking_time * z_slope, TRACKING_TIME * z_slope * np.ones(len(settle_time))))
         self.traj_psi = np.concatenate((self.psi0 + 2*np.pi*f*tracking_time, (self.psi0 + 2*np.pi) * np.ones(len(settle_time))))
+        
+        self.target_phi = np.zeros(self.traj_x.shape)
+        self.target_theta = np.zeros(self.traj_x.shape)
     
     def init_sim(self, sim):
         # Get A matrix corresponding to zero state vector equilibrium position
@@ -62,13 +65,15 @@ class MPCHelix(BlimpController):
         self.C = np.matrix([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
         self.D = np.zeros((self.num_outputs, self.num_inputs))
 
-        self.P = np.identity(self.num_inputs) * 10
-        self.Q = np.identity(self.num_inputs) * 10
-        self.R = np.identity(self.num_outputs) * 10
- 
+        self.P = np.identity(self.num_outputs)
+        self.Q = np.identity(self.num_outputs)
+        self.R = np.identity(self.num_inputs)
+
         xmin = np.matrix([[-np.inf],
                         [-np.inf],
                         [-np.inf],
@@ -163,6 +168,8 @@ class MPCHelix(BlimpController):
             self.traj_x[n:n+self.N],
             self.traj_y[n:n+self.N],
             self.traj_z[n:n+self.N],
+            np.zeros(self.N),
+            np.zeros(self.N),
             self.traj_psi[n:n+self.N]
         ])
 
