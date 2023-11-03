@@ -13,7 +13,7 @@ class FeedbackLinearizedCtrlHelix(BlimpController):
         SETTLE_TIME = 100
 
         tracking_time = np.arange(0, TRACKING_TIME, dT)
-        settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME, dT)
+        settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, dT)
 
         time_vec = np.concatenate((tracking_time, settle_time))
 

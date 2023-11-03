@@ -19,7 +19,7 @@ class MPCHelix(BlimpController):
         SETTLE_TIME = 100
 
         tracking_time = np.arange(0, TRACKING_TIME, dT)
-        settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME, dT)
+        settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, dT)
 
         time_vec = np.concatenate((tracking_time, settle_time))
 
@@ -112,7 +112,8 @@ class MPCHelix(BlimpController):
                         [np.inf],
                         [np.inf]])
         
-        self.N = 250
+        #self.N = 250
+        self.N = 10
 
         self.env = gp.Env(empty=True)
         self.env.setParam('OutputFlag', 0)
@@ -165,12 +166,12 @@ class MPCHelix(BlimpController):
 
         n = sim.get_current_timestep()
         reference = np.array([
-            self.traj_x[n:n+self.N],
-            self.traj_y[n:n+self.N],
-            self.traj_z[n:n+self.N],
-            np.zeros(self.N),
-            np.zeros(self.N),
-            self.traj_psi[n:n+self.N]
+            self.traj_x[n:min(n+self.N, len(self.traj_x))],
+            self.traj_y[n:min(n+self.N, len(self.traj_y))],
+            self.traj_z[n:min(n+self.N, len(self.traj_z))],
+            np.zeros(min(self.N, len(self.traj_x) - n)),
+            np.zeros(min(self.N, len(self.traj_x) - n)),
+            self.traj_psi[n:min(n+self.N, len(self.traj_psi))]
         ])
 
         sim_state = sim.get_state()
@@ -206,7 +207,10 @@ class MPCHelix(BlimpController):
         self.ic_constraint.rhs = state
 
         for k in range(self.N):
-            self.error_constraints[k].rhs = reference[:, k]
+            if k < reference.shape[1]:
+                self.error_constraints[k].rhs = reference[:, k]
+            else:
+                self.m.remove(self.error_constraints[k])
             
         self.m.optimize()
 
