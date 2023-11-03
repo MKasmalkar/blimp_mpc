@@ -1,18 +1,11 @@
-from LinearBlimpSim import LinearBlimpSim
 from NonlinearBlimpSim import NonlinearBlimpSim
-from DiscreteBlimpSim import DiscreteBlimpSim
 
-from OriginLQRController import OriginLQRController
-from FeedbackLinearizedCtrlHelix import FeedbackLinearizedCtrlHelix
-from WaypointTrackingMPC import WaypointTrackingMPC
-from TestController import TestController
-from MPCHelix import MPCHelix
+from CasadiHelix import CasadiHelix
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
 
 import numpy as np
-import time
 import sys
 
 if len(sys.argv) < 2:
@@ -23,12 +16,12 @@ if len(sys.argv) < 2:
 
 dT = 0.05
 STOP_TIME = 120
-PLOT_WAVEFORMS = True
+PLOT_WAVEFORMS = False
 
 WINDOW_TITLE = 'Nonlinear'
 
 Simulator = NonlinearBlimpSim
-Controller = MPCHelix
+Controller = CasadiHelix
 
 ## SIMULATION
 
