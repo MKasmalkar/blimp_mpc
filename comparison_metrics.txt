@@ -1,7 +1,13 @@
-*Solve time
-*RMS error from trajectory
-*control effort
-*attitude keeping
-
-RPi vs computer
 different trajectories
+
+6 configurations:
+	computer - gurobi
+	computer - casadi
+	computer - tracking
+	rpi - gurobi
+	rpi - casadi
+	rpi - tracking
+
+Also:
+	rpi - casadi, shorter horizon
+
