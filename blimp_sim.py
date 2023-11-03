@@ -17,7 +17,7 @@ if len(sys.argv) < 2:
 
 ## PARAMETERS
 
-dT = 0.05
+dT = 0.05 
 STOP_TIME = 120
 PLOT_WAVEFORMS = False
 
@@ -30,8 +30,8 @@ Controller = CasadiHelix
 
 sim = Simulator(dT)
 
-#plotter = BlimpPlotter()
-#plotter.init_plot(WINDOW_TITLE, waveforms=PLOT_WAVEFORMS)
+plotter = BlimpPlotter()
+plotter.init_plot(WINDOW_TITLE, waveforms=PLOT_WAVEFORMS)
 
 ctrl = Controller(dT)
 ctrl.init_sim(sim)
@@ -43,13 +43,15 @@ if len(sys.argv) > 2:
 try:
     for n in range(int(STOP_TIME / dT)):
         print("Time: " + str(round(n*dT, 2)))
-
-        u = ctrl.get_ctrl_action(sim)
-        sim.update_model(u)
-        #plotter.update_plot(sim, ctrl)
         
-        #if plotter.window_was_closed():
-        #    break
+        start_time = time.time_ns()
+        u = ctrl.get_ctrl_action(sim)
+        print(time.time_ns() - start_time)
+        sim.update_model(u)
+        plotter.update_plot(sim, ctrl)
+        
+        if plotter.window_was_closed():
+            break
 
 except KeyboardInterrupt:
     print("Done!")
@@ -59,5 +61,5 @@ finally:
     logger = BlimpLogger(sys.argv[1])
     logger.log(sim, ctrl)
 
-    #if not plotter.window_was_closed():
-        #plotter.block()
+    if not plotter.window_was_closed():
+        plotter.block()
