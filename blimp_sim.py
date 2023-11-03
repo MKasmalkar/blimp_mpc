@@ -1,12 +1,15 @@
 from NonlinearBlimpSim import NonlinearBlimpSim
 
 from FeedbackLinearizedCtrlHelix import FeedbackLinearizedCtrlHelix
+from MPCHelix import MPCHelix
+from CasadiHelix import CasadiHelix
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
 
 import numpy as np
 import sys
+import time
 
 if len(sys.argv) < 2:
     print("Please run with output file name as argument.")
@@ -21,14 +24,14 @@ PLOT_WAVEFORMS = False
 WINDOW_TITLE = 'Nonlinear'
 
 Simulator = NonlinearBlimpSim
-Controller = FeedbackLinearizedCtrlHelix
+Controller = CasadiHelix 
 
 ## SIMULATION
 
 sim = Simulator(dT)
 
-plotter = BlimpPlotter()
-plotter.init_plot(WINDOW_TITLE, waveforms=PLOT_WAVEFORMS)
+#plotter = BlimpPlotter()
+#plotter.init_plot(WINDOW_TITLE, waveforms=PLOT_WAVEFORMS)
 
 ctrl = Controller(dT)
 ctrl.init_sim(sim)
@@ -43,10 +46,10 @@ try:
 
         u = ctrl.get_ctrl_action(sim)
         sim.update_model(u)
-        plotter.update_plot(sim, ctrl)
+        #plotter.update_plot(sim, ctrl)
         
-        if plotter.window_was_closed():
-            break
+        #if plotter.window_was_closed():
+        #    break
 
 except KeyboardInterrupt:
     print("Done!")
@@ -56,5 +59,5 @@ finally:
     logger = BlimpLogger(sys.argv[1])
     logger.log(sim, ctrl)
 
-    if not plotter.window_was_closed():
-        plotter.block()
+    #if not plotter.window_was_closed():
+        #plotter.block()
