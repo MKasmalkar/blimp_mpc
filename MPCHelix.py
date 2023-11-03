@@ -112,8 +112,7 @@ class MPCHelix(BlimpController):
                         [np.inf],
                         [np.inf]])
         
-        #self.N = 250
-        self.N = 10
+        self.N = 250
 
         self.env = gp.Env(empty=True)
         self.env.setParam('OutputFlag', 0)
