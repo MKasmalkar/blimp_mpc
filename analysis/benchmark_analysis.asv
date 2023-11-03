@@ -1,0 +1,175 @@
+close all
+clc
+
+%% Read data
+
+if ~exist('data', 'var')
+    data = readmatrix('benchmarks_matlab.xlsx');
+    
+    time = data(:, 1);
+    
+    solve_times = data(:, 2:7);
+    position_error = data(:, 8:13);
+    control_effort = data(:, 14:19);
+    attitude_keeping = data(:, 20:25);
+    
+    % st = solve time
+    % pe = position error
+    % ce = control effort
+    % ak = attitude-keeping
+    
+    % cmp = computer
+    % rpi = raspberry pi
+    
+    % trk = tracking controller
+    % gur = gurobi MPC
+    % cas = casadi MPC
+    
+    st_cmp_trk = solve_times(:, 1);
+    st_cmp_gur = solve_times(:, 2);
+    st_cmp_cas = solve_times(:, 3);
+    st_rpi_trk = solve_times(:, 4);
+    st_rpi_gur = solve_times(:, 5);
+    st_rpi_cas = solve_times(:, 6);
+    
+    pe_cmp_trk = position_error(:, 1);
+    pe_cmp_gur = position_error(:, 2);
+    pe_cmp_cas = position_error(:, 3);
+    pe_rpi_trk = position_error(:, 4);
+    pe_rpi_gur = position_error(:, 5);
+    pe_rpi_cas = position_error(:, 6);
+    
+    ce_cmp_trk = control_effort(:, 1);
+    ce_cmp_gur = control_effort(:, 2);
+    ce_cmp_cas = control_effort(:, 3);
+    ce_rpi_trk = control_effort(:, 4);
+    ce_rpi_gur = control_effort(:, 5);
+    ce_rpi_cas = control_effort(:, 6);
+    
+    ak_cmp_trk = attitude_keeping(:, 1);
+    ak_cmp_gur = attitude_keeping(:, 2);
+    ak_cmp_cas = attitude_keeping(:, 3);
+    ak_rpi_trk = attitude_keeping(:, 4);
+    ak_rpi_gur = attitude_keeping(:, 5);
+    ak_rpi_cas = attitude_keeping(:, 6);
+end
+
+%% Plot
+
+% Solve times
+
+figure
+
+subplot(211)
+hold on
+plot(time(5:end), st_cmp_trk(5:end)/1e6)
+plot(time(5:end), st_cmp_gur(5:end)/1e6)
+plot(time(5:end), st_cmp_cas(5:end)/1e6)
+
+xlabel('Time (sec)')
+ylabel('Solve time (ms)')
+title('Computer solve times')
+
+legend('Computer, Tracking', ...
+       'Computer, Gurobi MPC', ...
+       'Computer, Casadi MPC')
+
+subplot(212)
+hold on
+plot(time(5:end), st_rpi_trk(5:end)/1e6)
+plot(time(5:end), st_rpi_gur(5:end)/1e6)
+plot(time(5:end), st_rpi_cas(5:end)/1e6)
+
+xlabel('Time (sec)')
+ylabel('Solve time (ms)')
+title('RPi solve times')
+
+legend('RPi, Tracking', ...
+       'RPi, Gurobi MPC', ...
+       'RPi, Casadi MPC')
+
+
+% Position error
+
+figure
+subplot(211)
+hold on
+plot(time, pe_cmp_trk)
+plot(time, pe_cmp_gur)
+plot(time, pe_cmp_cas)
+
+xlabel('Time (sec)')
+ylabel('Position error (m)')
+title('Position e')
+
+legend('Computer, Tracking', ...
+       'Computer, Gurobi MPC', ...
+       'Computer, Casadi MPC')
+
+subplot(212)
+hold on
+plot(time, pe_rpi_trk)
+plot(time, pe_rpi_gur)
+plot(time, pe_rpi_cas)
+
+xlabel('Time (sec)')
+ylabel('Position error (m)')
+title('RPi position error')
+
+legend('RPi, Tracking', ...
+       'RPi, Gurobi MPC', ...
+       'RPi, Casadi MPC')
+
+% Control effort
+
+figure
+subplot(211)
+hold on
+plot(time, ce_cmp_trk)
+plot(time, ce_cmp_gur)
+plot(time, ce_cmp_cas)
+
+xlabel('Time (sec)')
+ylabel('Control effort (N)')
+title('Computer control effort')
+
+legend('Computer, Tracking', ...
+       'Computer, Gurobi MPC', ...
+       'Computer, Casadi MPC')
+
+subplot(212)
+hold on
+plot(time, ce_rpi_trk)
+plot(time, ce_rpi_gur)
+plot(time, ce_rpi_cas)
+
+xlabel('Time (sec)')
+ylabel('Control effort (N)')
+title('RPi control effort')
+
+legend('RPi, Tracking', ...
+       'RPi, Gurobi MPC', ...
+       'RPi, Casadi MPC')
+
+% Attitude-keeping
+
+figure
+hold on
+
+plot(time, ak_cmp_trk)
+plot(time, ak_cmp_gur)
+plot(time, ak_cmp_cas)
+plot(time, ak_rpi_trk)
+plot(time, ak_rpi_gur)
+plot(time, ak_rpi_cas)
+
+xlabel('Time (sec)')
+ylabel('Norm of phi/theta error)')
+title('Attitude-keeping')
+
+legend('Computer, Tracking', ...
+       'Computer, Gurobi MPC', ...
+       'Computer, Casadi MPC', ...
+       'RPi, Tracking', ...
+       'RPi, Gurobi MPC', ...
+       'RPi, Casadi MPC')
