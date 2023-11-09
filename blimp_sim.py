@@ -1,6 +1,8 @@
 from NonlinearBlimpSim import NonlinearBlimpSim
 
 from FeedbackLinearizedCtrlHelix import FeedbackLinearizedCtrlHelix
+from FeedbackLinearizedOneShot import FeedbackLinearizedOneShot
+from FeedbackLinFullDynamics import FeedbackLinFullDynamics
 from MPCHelix import MPCHelix
 from CasadiHelix import CasadiHelix
 
@@ -19,19 +21,22 @@ if len(sys.argv) < 2:
 
 dT = 0.05 
 STOP_TIME = 120
+PLOT_ANYTHING = False
 PLOT_WAVEFORMS = False
 
 WINDOW_TITLE = 'Nonlinear'
 
 Simulator = NonlinearBlimpSim
-Controller = CasadiHelix 
+Controller = MPCHelix
 
 ## SIMULATION
 
 sim = Simulator(dT)
 
 plotter = BlimpPlotter()
-plotter.init_plot(WINDOW_TITLE, waveforms=PLOT_WAVEFORMS)
+plotter.init_plot(WINDOW_TITLE,
+                  waveforms=PLOT_WAVEFORMS,
+                  disable_plotting=(not PLOT_ANYTHING))
 
 ctrl = Controller(dT)
 ctrl.init_sim(sim)
@@ -43,10 +48,7 @@ if len(sys.argv) > 2:
 try:
     for n in range(int(STOP_TIME / dT)):
         print("Time: " + str(round(n*dT, 2)))
-        
-        start_time = time.time_ns()
         u = ctrl.get_ctrl_action(sim)
-        print(time.time_ns() - start_time)
         sim.update_model(u)
         plotter.update_plot(sim, ctrl)
         

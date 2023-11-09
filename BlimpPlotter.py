@@ -7,8 +7,13 @@ class BlimpPlotter():
     
     def __init__(self):
         self.plotting = False
+        self.window_closed = False
 
-    def init_plot(self, title, waveforms=True):
+    def init_plot(self, title, waveforms=True, disable_plotting=False):
+        if disable_plotting:
+            self.plotting = False
+            return
+
         self.fig = plt.figure(title, figsize=(13.5, 7))
         plt.ion()
 

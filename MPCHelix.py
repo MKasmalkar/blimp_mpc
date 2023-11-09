@@ -158,12 +158,52 @@ class MPCHelix(BlimpController):
         self.m.setObjective(obj1 + obj2 + obj3)
 
         self.m.update()
+
+        # Add attitude oscillation damping costs
+        max_allowable_phi = 0.05
+        max_allowable_theta = 0.05
+        max_allowable_psi_deviation = 0.05
+
+        max_allowable_x_deviation = 0.4
+        max_allowable_y_deviation = 0.4
+        max_allowable_z_deviation = 0.4
+
+        self.Q[0, 0] = 1/max_allowable_x_deviation**2
+        self.Q[1, 1] = 1/max_allowable_y_deviation**2
+        self.Q[2, 2] = 1/max_allowable_z_deviation**2
+
+        self.P[0, 0] = 1/max_allowable_x_deviation**2
+        self.P[1, 1] = 1/max_allowable_y_deviation**2
+        self.P[2, 2] = 1/max_allowable_z_deviation**2
+
+        self.Q[3, 3] = 1/max_allowable_phi**2
+        self.Q[4, 4] = 1/max_allowable_theta**2
+        self.Q[5, 5] = 1/max_allowable_psi_deviation**2
+
+        self.P[3, 3] = 1/max_allowable_phi**2
+        self.P[4, 4] = 1/max_allowable_theta**2
+        self.P[5, 5] = 1/max_allowable_psi_deviation**2
+
+        # terminal cost
+        obj1 = self.z[self.N, :] @ self.P @ self.z[self.N, :]
         
+        # running state/error cost
+        obj2 = sum(self.z[k, :] @ self.Q @ self.z[k, :] for k in range(self.N))
+        
+        # running input cost
+        obj3 = sum(self.u[k, :] @ self.R @ self.u[k, :] for k in range(self.N))
+
+        self.att_damp_obj = obj1 + obj2 + obj3
+
     def get_ctrl_action(self, sim):
 
         sim.start_timer()
 
         n = sim.get_current_timestep()
+
+        if n == int(20/self.dT):
+            self.m.setObjective(self.att_damp_obj)
+
         reference = np.array([
             self.traj_x[n:min(n+self.N, len(self.traj_x))],
             self.traj_y[n:min(n+self.N, len(self.traj_y))],
