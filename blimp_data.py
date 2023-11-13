@@ -5,7 +5,7 @@ from DiscreteBlimpSim import DiscreteBlimpSim
 
 from BlimpController import BlimpController
 from OriginLQRController import OriginLQRController
-from FeedbackLinearizedCtrlHelix import FeedbackLinearizedCtrlHelix
+from TrackingRepeatedReducedOrder import TrackingRepeatedReducedOrder
 from WaypointTrackingMPC import WaypointTrackingMPC
 from TestController import TestController
 from MPCHelix import MPCHelix
@@ -21,8 +21,12 @@ import sys
 
 TITLE = "Plots"
 
+# Neither of these selections matter - these objects
+# just need to be created in order to load and plot
+# the simulation data from the file.
+
 Simulator = NonlinearBlimpSim
-Controller = FeedbackLinearizedCtrlHelix
+Controller = TrackingRepeatedReducedOrder
 
 ## Plotting
 
