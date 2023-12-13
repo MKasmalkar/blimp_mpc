@@ -338,7 +338,7 @@ set(gca, 'XTickLabel', gains_names, 'XTick', 1:numel(gains_names), 'FontSize', 8
 
 subplot(244)
 bar(w_x_correlations)
-title("w_y")
+title("w_x")
 set(gca, 'XTickLabel', gains_names, 'XTick', 1:numel(gains_names), 'FontSize', 8);
 
 subplot(245)

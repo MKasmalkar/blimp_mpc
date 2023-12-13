@@ -31,7 +31,7 @@ TITLE = "Plots"
 # the simulation data from the file.
 
 Simulator = NonlinearBlimpSim
-Controller = TrackingNoDamping
+Controller = TrackingHelixTrajGen
 
 ## Plotting
 
