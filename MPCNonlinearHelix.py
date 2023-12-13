@@ -4,8 +4,9 @@ import numpy as np
 import time
 from BlimpController import BlimpController
 from parameters import *
+import sys
 
-class MPCHelix(BlimpController):
+class MPCNonlinearHelix(BlimpController):
 
     def __init__(self, dT):
         super().__init__(dT)
@@ -112,14 +113,15 @@ class MPCHelix(BlimpController):
                         [np.inf],
                         [np.inf]])
         
-        self.N = 250
+        self.N = 10
 
         self.env = gp.Env(empty=True)
-        self.env.setParam('OutputFlag', 0)
-        self.env.setParam('LogToConsole', 0)
+        self.env.setParam('OutputFlag', 1)
+        self.env.setParam('LogToConsole', 1)
         self.env.start()
 
         self.m = gp.Model(env=self.env)
+        self.m.setParam("NonConvex", 2)
 
         self.x = self.m.addMVar(shape=(self.N+1, self.order),
                         lb=xmin.T, ub=xmax.T, name='x')
@@ -134,8 +136,131 @@ class MPCHelix(BlimpController):
 
         for k in range(self.N):
             self.m.addConstr(self.y[k, :] == self.C @ self.x[k, :])
-            self.m.addConstr(self.x[k+1, :] - self.B @ self.u[k, :] == A_dis @ self.x[k, :],
-                                name='dynamics' + str(k))
+
+            # Get state variables
+
+            v_x_k = self.x[k, 0].item()
+            v_y_k = self.x[k, 1].item()
+            v_z_k = self.x[k, 2].item()
+            w_x_k = self.x[k, 3].item()
+            w_y_k = self.x[k, 4].item()
+            w_z_k = self.x[k, 5].item()
+
+            phi_k = self.x[k, 9].item()
+            the_k = self.x[k, 10].item()
+            
+            nu_bn_b = np.array([[v_x_k],
+                                [v_y_k],
+                                [v_z_k],
+                                [w_x_k],
+                                [w_y_k],
+                                [w_z_k]])
+            
+            # Define trig constraints
+            cos_phi = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-1.0, ub=1.0)
+            sin_phi = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-1.0, ub=1.0)
+            cos_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-1.0, ub=1.0)
+            sin_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-1.0, ub=1.0)
+            tan_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            one_over_cos_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+
+            self.m.addGenConstrCos(phi_k, cos_phi)
+            self.m.addGenConstrSin(phi_k, sin_phi)
+            self.m.addGenConstrCos(the_k, cos_the)
+            self.m.addGenConstrSin(the_k, sin_the)
+            self.m.addGenConstrTan(the_k, tan_the)
+            self.m.addConstr(one_over_cos_the * cos_the == 1)
+
+            # Define intermediate variables because Gurobi can only handle
+            # bilinear constraints
+            cos_phi_cos_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-1.0, ub=1.0)
+            self.m.addConstr(cos_phi_cos_the == cos_phi * cos_the)
+
+            cos_phi_sin_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-1.0, ub=1.0)
+            self.m.addConstr(cos_phi_sin_the == cos_phi * sin_the)
+
+            sin_phi_sin_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-1.0, ub=1.0)
+            self.m.addConstr(sin_phi_sin_the == sin_phi * sin_the)
+
+            cos_the_sin_phi = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-1.0, ub=1.0)
+            self.m.addConstr(cos_the_sin_phi == cos_the * sin_phi)
+            
+            cos_phi_tan_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(cos_phi_tan_the == cos_phi * tan_the)
+
+            sin_phi_tan_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(sin_phi_tan_the == sin_phi * tan_the)
+
+            cos_phi_over_cos_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(cos_phi_over_cos_the == cos_phi * one_over_cos_the)
+
+            sin_phi_over_cos_the = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(sin_phi_over_cos_the == sin_phi * one_over_cos_the)
+
+            # Implement dynamics constraints
+
+            fg_B = R_b__n_inv_grb(cos_phi, sin_phi, cos_the, sin_the, 1, 0) @ fg_n
+            g_CB = -np.block([[np.zeros((3, 1))],
+                        [np.reshape(np.cross(r_gb__b, fg_B), (3, 1))]])
+            
+            tau_B = np.array([[self.u[k, 0]],
+                              [self.u[k, 1]],
+                              [self.u[k, 2]],
+                              [-r_z_tg__b*self.u[k, 1]],
+                              [r_z_tg__b*self.u[k, 1]],
+                              [self.u[k, 3]]])
+            
+            x_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(x_dot == v_x_k*cos_the + v_z_k*cos_phi_sin_the + v_y_k*sin_phi_sin_the)
+            
+            y_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(y_dot == v_y_k*cos_phi - v_z_k*sin_phi)
+            
+            z_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(z_dot == v_z_k*cos_phi_cos_the - v_x_k*sin_the + v_y_k*cos_the_sin_phi)
+            
+            phi_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(phi_dot == w_x_k + w_z_k*cos_phi_tan_the + w_y_k*sin_phi_tan_the)
+            
+            the_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(the_dot == w_y_k*cos_phi - w_z_k*sin_phi)
+            
+            psi_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(psi_dot == w_z_k*cos_phi_over_cos_the + w_y_k*sin_phi_over_cos_the)
+            
+            nu_bn_b_dot = np.reshape(-M_CB_inv @ (C(M_CB, nu_bn_b) @ nu_bn_b + \
+                                D_CB @ nu_bn_b + g_CB - tau_B), (6, 1))
+            
+            v_x_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(v_x_dot == nu_bn_b_dot[0].item())
+
+            v_y_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(v_y_dot == nu_bn_b_dot[1].item())
+
+            v_z_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(v_z_dot == nu_bn_b_dot[2].item())
+            
+            w_x_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(w_x_dot == nu_bn_b_dot[3].item())
+
+            w_y_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(w_y_dot == nu_bn_b_dot[4].item())
+
+            w_z_dot = self.m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY)
+            self.m.addConstr(w_z_dot == nu_bn_b_dot[5].item())
+
+            self.m.addConstr(self.x[k+1, 0]  == self.x[k, 0]  + sim.dT * v_x_dot)
+            self.m.addConstr(self.x[k+1, 1]  == self.x[k, 1]  + sim.dT * v_y_dot)
+            self.m.addConstr(self.x[k+1, 2]  == self.x[k, 2]  + sim.dT * v_z_dot)
+            self.m.addConstr(self.x[k+1, 3]  == self.x[k, 3]  + sim.dT * w_x_dot)
+            self.m.addConstr(self.x[k+1, 4]  == self.x[k, 4]  + sim.dT * w_y_dot)
+            self.m.addConstr(self.x[k+1, 5]  == self.x[k, 5]  + sim.dT * w_z_dot)
+            self.m.addConstr(self.x[k+1, 6]  == self.x[k, 6]  + sim.dT * x_dot)
+            self.m.addConstr(self.x[k+1, 7]  == self.x[k, 7]  + sim.dT * y_dot)
+            self.m.addConstr(self.x[k+1, 8]  == self.x[k, 8]  + sim.dT * z_dot)
+            self.m.addConstr(self.x[k+1, 9]  == self.x[k, 9]  + sim.dT * phi_dot)
+            self.m.addConstr(self.x[k+1, 10] == self.x[k, 10] + sim.dT * the_dot)
+            self.m.addConstr(self.x[k+1, 11] == self.x[k, 11] + sim.dT * psi_dot)
             
         self.error_constraints = []
         for k in range(self.N):
@@ -201,8 +326,8 @@ class MPCHelix(BlimpController):
 
         n = sim.get_current_timestep()
 
-        # if n == int(20/self.dT):
-        #     self.m.setObjective(self.att_damp_obj)
+        if n == int(20/self.dT):
+            self.m.setObjective(self.att_damp_obj)
 
         reference = np.array([
             self.traj_x[n:min(n+self.N, len(self.traj_x))],
@@ -269,6 +394,8 @@ class MPCHelix(BlimpController):
         
         sim.end_timer()
 
+        print(u.reshape(4))
+        print(self.m.objVal)
         return u
         
     def get_trajectory(self):

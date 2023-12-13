@@ -3,7 +3,7 @@ import csv
 
 class BlimpController():
 
-    def __init__(self, dT):
+    def __init__(self, dT, skip_derivatives=False):
         self.dT = dT
         self.error_history = None
 

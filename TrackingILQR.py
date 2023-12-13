@@ -3,7 +3,7 @@ import numpy as np
 import control
 from parameters import *
 
-class TrackingRepeatedReducedOrder(BlimpController):
+class TrackingILQR(BlimpController):
 
     def __init__(self, dT):
         super().__init__(dT)
@@ -51,39 +51,6 @@ class TrackingRepeatedReducedOrder(BlimpController):
         self.traj_y_ddot = np.concatenate((-(2*np.pi*f)**2*self.At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
         self.traj_z_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
         self.traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-
-        max_allowable_theta = 0.05
-        max_allowable_phi = 0.05
-        
-        max_allowable_wy = 0.02
-        max_allowable_wx = 0.02
-
-        max_allowable_vx = 0.5
-        max_allowable_vy = 0.5
-
-        max_allowable_vz = 0.5
-
-        self.Q = np.array([
-            [1/max_allowable_theta**2, 0, 0, 0, 0, 0, 0],
-            [0, 1/max_allowable_wy**2, 0, 0, 0, 0, 0],
-            [0, 0, 1/max_allowable_phi**2, 0, 0, 0, 0],
-            [0, 0, 0, 1/max_allowable_wx**2, 0, 0, 0],
-            [0, 0, 0, 0, 1/max_allowable_vx**2, 0, 0],
-            [0, 0, 0, 0, 0, 1/max_allowable_vy**2, 0],
-            [0, 0, 0, 0, 0, 0, 1/max_allowable_vz**2]
-        ])
-
-        self.R = np.eye(3)
-
-        self.B_lin = np.array([
-                [0, 0, 0],
-                [0.0398, 0, 0],
-                [0, 0, 0],
-                [0, -0.0398, 0],
-                [2.17, 0, 0],
-                [0, 2.17, 0],
-                [0, 0, 1.33]
-            ])
 
     def init_sim(self, sim):
         sim.set_var('x', self.At)
@@ -168,25 +135,6 @@ class TrackingRepeatedReducedOrder(BlimpController):
         u_traj = Binv @ (q - A)
 
         u = u_traj
-
-        if sim.get_current_time() >= 20:
-            
-            A_lin = np.array([
-                [0, np.cos(phi), -1*w_y__b*np.sin(phi), 0, 0, 0, 0],
-                [-0.154*np.cos(theta), 0.00979*v_z__b-0.0168, 0, 0, 0.495*v_z__b+3.9e-4, 0, 0.495*v_x__b+0.00979*w_y__b],
-                [-(w_y__b*np.sin(phi))/(np.sin(theta)**2-1), np.sin(phi)*np.tan(theta), w_y__b*np.cos(phi)*np.tan(theta), 1, 0, 0, 0],
-                [0.154*np.sin(phi)*np.sin(theta), 0, -0.154*np.cos(phi)*np.cos(theta), 0.00979*v_z__b-0.0168, 0, -0.495*v_z__b-3.9e-4, 0.00979*w_x__b-0.495*v_y__b],
-                [0, -1.62*v_z__b, 0, 0,-0.0249, 0, -1.62*w_y__b],
-                [0, 0, 0, 1.62*v_z__b, 0, -0.0249, 1.62*w_x__b],
-                [0, 0.615*v_x__b+0.0244*w_y__b, 0, 0.0244*w_x__b-0.615*v_y__b, 0.615*w_y__b, -0.615*w_x__b, -0.064]
-            ])
-            
-            K = control.lqr(A_lin, self.B_lin, self.Q, self.R)[0]
-            f_out = -K @ np.array([theta, w_y__b, phi, w_x__b, v_x__b, v_y__b, v_z__b]).reshape((7, 1))
-            u_swing = np.array([f_out[0].item(),
-                                f_out[1].item(),
-                                f_out[2].item(), 0]).reshape((4, 1))
-            u += u_swing
 
         sim.end_timer()
 

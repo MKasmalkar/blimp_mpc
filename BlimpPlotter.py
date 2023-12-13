@@ -63,7 +63,7 @@ class BlimpPlotter():
                            sim.get_var('z'),
                            color='m',
                            s=200)
-        self.ax_3d.set_zlim([-2, 2])
+        # self.ax_3d.set_zlim([-2, 2])
     
         traj = ctrl.get_trajectory()
         

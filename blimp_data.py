@@ -6,9 +6,13 @@ from DiscreteBlimpSim import DiscreteBlimpSim
 from BlimpController import BlimpController
 from OriginLQRController import OriginLQRController
 from TrackingRepeatedReducedOrder import TrackingRepeatedReducedOrder
+from TrackingLine import TrackingLine
+from TrackingLineTrajGen import TrackingLineTrajGen
+from TrackingHelixTrajGen import TrackingHelixTrajGen
 from WaypointTrackingMPC import WaypointTrackingMPC
 from TestController import TestController
 from MPCHelix import MPCHelix
+from CasadiNonlinearHelix import CasadiNonlinearHelix
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -26,7 +30,7 @@ TITLE = "Plots"
 # the simulation data from the file.
 
 Simulator = NonlinearBlimpSim
-Controller = TrackingRepeatedReducedOrder
+Controller = CasadiNonlinearHelix
 
 ## Plotting
 
@@ -36,7 +40,7 @@ if len(sys.argv) < 2:
 
 dT = 0.05  # will be overridden by data load anyways
 sim = Simulator(dT)
-ctrl = Controller(dT)
+ctrl = Controller(dT, skip_derivatives=True)
 plotter = BlimpPlotter()
 
 sim.load_data(sys.argv[1])

@@ -3,91 +3,34 @@ import numpy as np
 import control
 from parameters import *
 
-class TrackingRepeatedReducedOrder(BlimpController):
+class TrackingLine(BlimpController):
 
     def __init__(self, dT):
         super().__init__(dT)
                 
         # Time
         TRACKING_TIME = 20
-        SETTLE_TIME = 100
+        SETTLING_TIME = 100
+
+        speed = 0.5
 
         tracking_time = np.arange(0, TRACKING_TIME, dT)
-        settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, dT)
+        settling_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLING_TIME + 1, dT)
 
-        time_vec = np.concatenate((tracking_time, settle_time))
+        self.traj_x = np.concatenate((speed * tracking_time, TRACKING_TIME*speed*np.ones(settling_time.shape)))
+        self.traj_y = np.concatenate((speed * tracking_time, TRACKING_TIME*speed*np.ones(settling_time.shape)))
+        self.traj_z = np.concatenate((-speed * tracking_time, -TRACKING_TIME*speed*np.ones(settling_time.shape)))
+        self.traj_psi = np.zeros(len(tracking_time) + len(settling_time))
 
-        # Trajectory definition
-        f = 0.05
-        self.At = 1
+        self.traj_x_dot = np.concatenate((speed * np.ones(tracking_time.shape), 0*np.ones(settling_time.shape)))
+        self.traj_y_dot = np.concatenate((speed * np.ones(tracking_time.shape), 0*np.ones(settling_time.shape)))
+        self.traj_z_dot = np.concatenate((-speed * np.ones(tracking_time.shape), 0*np.ones(settling_time.shape)))
+        self.traj_psi_dot = np.zeros(len(tracking_time) + len(settling_time))
 
-        x0 = self.At
-        y0 = 0
-        z0 = 0
-
-        phi0 = 0
-        theta0 = 0
-        psi0 = np.pi/2
-
-        v_x0 = 0.0
-        v_y0 = 0.0
-        v_z0 = 0.0
-
-        w_x0 = 0
-        w_y0 = 0
-        w_z0 = 0
-
-        self.traj_x = np.concatenate((self.At * np.cos(2*np.pi*f*tracking_time), self.At*np.ones(len(settle_time))))
-        self.traj_y = np.concatenate((self.At * np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-        self.traj_z = np.concatenate((tracking_time * -1/10, -TRACKING_TIME * 1/10 * np.ones(len(settle_time))))
-        self.traj_psi = np.concatenate((psi0 + 2*np.pi*f*tracking_time, (psi0 + 2*np.pi) * np.ones(len(settle_time))))
-
-        self.traj_x_dot = np.concatenate((-2*np.pi*f*self.At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-        self.traj_y_dot = np.concatenate((2*np.pi*f*self.At*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-        self.traj_z_dot = np.concatenate((-1/10 * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
-        self.traj_psi_dot = np.concatenate((2*np.pi*f * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
-
-        self.traj_x_ddot = np.concatenate((-(2*np.pi*f)**2*self.At*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-        self.traj_y_ddot = np.concatenate((-(2*np.pi*f)**2*self.At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-        self.traj_z_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-        self.traj_psi_ddot = np.concatenate((np.zeros(len(tracking_time)), np.zeros(len(settle_time))))
-
-        max_allowable_theta = 0.05
-        max_allowable_phi = 0.05
-        
-        max_allowable_wy = 0.02
-        max_allowable_wx = 0.02
-
-        max_allowable_vx = 0.5
-        max_allowable_vy = 0.5
-
-        max_allowable_vz = 0.5
-
-        self.Q = np.array([
-            [1/max_allowable_theta**2, 0, 0, 0, 0, 0, 0],
-            [0, 1/max_allowable_wy**2, 0, 0, 0, 0, 0],
-            [0, 0, 1/max_allowable_phi**2, 0, 0, 0, 0],
-            [0, 0, 0, 1/max_allowable_wx**2, 0, 0, 0],
-            [0, 0, 0, 0, 1/max_allowable_vx**2, 0, 0],
-            [0, 0, 0, 0, 0, 1/max_allowable_vy**2, 0],
-            [0, 0, 0, 0, 0, 0, 1/max_allowable_vz**2]
-        ])
-
-        self.R = np.eye(3)
-
-        self.B_lin = np.array([
-                [0, 0, 0],
-                [0.0398, 0, 0],
-                [0, 0, 0],
-                [0, -0.0398, 0],
-                [2.17, 0, 0],
-                [0, 2.17, 0],
-                [0, 0, 1.33]
-            ])
-
-    def init_sim(self, sim):
-        sim.set_var('x', self.At)
-        sim.set_var('psi', np.pi/2)
+        self.traj_x_ddot = np.zeros(len(tracking_time) + len(settling_time))
+        self.traj_y_ddot = np.zeros(len(tracking_time) + len(settling_time))
+        self.traj_z_ddot = np.zeros(len(tracking_time) + len(settling_time))
+        self.traj_psi_ddot = np.zeros(len(tracking_time) + len(settling_time))
 
     def get_ctrl_action(self, sim):
 
@@ -165,28 +108,7 @@ class TrackingRepeatedReducedOrder(BlimpController):
 
         q = -k1 * e1 - k2 * e2 + yd_ddot
 
-        u_traj = Binv @ (q - A)
-
-        u = u_traj
-
-        if sim.get_current_time() >= 20:
-            
-            A_lin = np.array([
-                [0, np.cos(phi), -1*w_y__b*np.sin(phi), 0, 0, 0, 0],
-                [-0.154*np.cos(theta), 0.00979*v_z__b-0.0168, 0, 0, 0.495*v_z__b+3.9e-4, 0, 0.495*v_x__b+0.00979*w_y__b],
-                [-(w_y__b*np.sin(phi))/(np.sin(theta)**2-1), np.sin(phi)*np.tan(theta), w_y__b*np.cos(phi)*np.tan(theta), 1, 0, 0, 0],
-                [0.154*np.sin(phi)*np.sin(theta), 0, -0.154*np.cos(phi)*np.cos(theta), 0.00979*v_z__b-0.0168, 0, -0.495*v_z__b-3.9e-4, 0.00979*w_x__b-0.495*v_y__b],
-                [0, -1.62*v_z__b, 0, 0,-0.0249, 0, -1.62*w_y__b],
-                [0, 0, 0, 1.62*v_z__b, 0, -0.0249, 1.62*w_x__b],
-                [0, 0.615*v_x__b+0.0244*w_y__b, 0, 0.0244*w_x__b-0.615*v_y__b, 0.615*w_y__b, -0.615*w_x__b, -0.064]
-            ])
-            
-            K = control.lqr(A_lin, self.B_lin, self.Q, self.R)[0]
-            f_out = -K @ np.array([theta, w_y__b, phi, w_x__b, v_x__b, v_y__b, v_z__b]).reshape((7, 1))
-            u_swing = np.array([f_out[0].item(),
-                                f_out[1].item(),
-                                f_out[2].item(), 0]).reshape((4, 1))
-            u += u_swing
+        u = Binv @ (q - A)
 
         sim.end_timer()
 

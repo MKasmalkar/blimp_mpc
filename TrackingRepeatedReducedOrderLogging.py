@@ -2,8 +2,9 @@ from BlimpController import BlimpController
 import numpy as np
 import control
 from parameters import *
+import csv
 
-class TrackingRepeatedReducedOrder(BlimpController):
+class TrackingRepeatedReducedOrderLogging(BlimpController):
 
     def __init__(self, dT):
         super().__init__(dT)
@@ -88,6 +89,15 @@ class TrackingRepeatedReducedOrder(BlimpController):
     def init_sim(self, sim):
         sim.set_var('x', self.At)
         sim.set_var('psi', np.pi/2)
+
+        self.writer = csv.writer(open('logs/kmatrix.csv', 'w', newline=''))
+        self.writer.writerow(
+            ['Time',
+             'theta', 'w_y__b', 'phi', 'w_x__b', 'v_x__b', 'v_y__b', 'v_z__b',
+             'k11', 'k12', 'k13', 'k14', 'k15', 'k16', 'k17',
+             'k21', 'k22', 'k23', 'k24', 'k25', 'k26', 'k27',
+             'k31', 'k32', 'k33', 'k34', 'k35', 'k36', 'k37']
+        )
 
     def get_ctrl_action(self, sim):
 
@@ -187,6 +197,14 @@ class TrackingRepeatedReducedOrder(BlimpController):
                                 f_out[1].item(),
                                 f_out[2].item(), 0]).reshape((4, 1))
             u += u_swing
+            
+            self.writer.writerow(
+                [sim.get_current_time(),
+                 theta, w_y__b, phi, w_x__b, v_x__b, v_y__b, v_z__b,
+                 K[0][0], K[0][1], K[0][2], K[0][3], K[0][4], K[0][5], K[0][6],
+                 K[1][0], K[1][1], K[1][2], K[1][3], K[1][4], K[1][5], K[1][6],
+                 K[2][0], K[2][1], K[2][2], K[2][3], K[2][4], K[2][5], K[2][6],]
+            )
 
         sim.end_timer()
 

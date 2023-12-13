@@ -13,10 +13,12 @@ r_z_tg__b = 0.13 - r_z_gb__b
 m_Ax = 0.3566
 m_Ay = m_Ax
 m_Az = 0.645
+m_Axy = m_Ax
 
 I_Ax = 0.0
 I_Ay = 0.0
 I_Az = 0.0
+I_Axy = I_Ax
 
 M_A_CB = np.diag([m_Ax, m_Ay, m_Az, I_Ax, I_Ay, I_Az])
 
@@ -24,6 +26,7 @@ m_RB = 0.1049
 I_RBx = 0.5821
 I_RBy = I_RBx
 I_RBz = I_RBx
+I_RBxy = I_RBx
 
 M_RB_CG = np.diag([m_RB, m_RB, m_RB, I_RBx, I_RBy, I_RBz])
 

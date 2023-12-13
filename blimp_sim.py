@@ -1,14 +1,22 @@
 from NonlinearBlimpSim import NonlinearBlimpSim
 from LinearBlimpSim import LinearBlimpSim
+from DiscreteBlimpSim import DiscreteBlimpSim
 
 from TrackingRepeatedReducedOrder import TrackingRepeatedReducedOrder
 from TrackingOneshotReducedOrder import TrackingOneshotReducedOrder
 from TrackingOneshotFullOrder import TrackingOneshotFullOrder
 from TrackingRepeatedFullOrder import TrackingRepeatedFullOrder
 from TrackingOneshotDecoupledAttDyn import TrackingOneshotDecoupledAttDyn
+from TrackingRepeatedReducedOrderLogging import TrackingRepeatedReducedOrderLogging
+from TrackingLineTrajGen import TrackingLineTrajGen
+from TrackingLine import TrackingLine
+from TrackingNoDamping import TrackingNoDamping
+from TrackingHelixTrajGen import TrackingHelixTrajGen
 from AttitudeStabilization import AttitudeStabilization
 from MPCHelix import MPCHelix
+from MPCNonlinearHelix import MPCNonlinearHelix
 from CasadiHelix import CasadiHelix
+from CasadiNonlinearHelix import CasadiNonlinearHelix
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -28,10 +36,10 @@ STOP_TIME = 120
 PLOT_ANYTHING = False
 PLOT_WAVEFORMS = False
 
-WINDOW_TITLE = 'Nonlinear'
+WINDOW_TITLE = 'Linear'
 
 Simulator = NonlinearBlimpSim
-Controller = MPCHelix
+Controller = CasadiNonlinearHelix
 
 ## SIMULATION
 
