@@ -75,7 +75,7 @@ class TrackingHelixTrajGen(BlimpController):
 
     def time_transform(self, t):
         # Logistic function
-        k = 0.08
+        k = 0.3
         L = self.TRACKING_IDX_FINAL
         t0 = self.TRACKING_TIME / 2
         return L / (1 + jnp.exp(-k * (t-t0)))

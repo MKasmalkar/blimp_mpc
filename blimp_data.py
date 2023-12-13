@@ -9,6 +9,7 @@ from TrackingRepeatedReducedOrder import TrackingRepeatedReducedOrder
 from TrackingLine import TrackingLine
 from TrackingLineTrajGen import TrackingLineTrajGen
 from TrackingHelixTrajGen import TrackingHelixTrajGen
+from TrackingNoDamping import TrackingNoDamping
 from WaypointTrackingMPC import WaypointTrackingMPC
 from TestController import TestController
 from MPCHelix import MPCHelix
@@ -30,7 +31,7 @@ TITLE = "Plots"
 # the simulation data from the file.
 
 Simulator = NonlinearBlimpSim
-Controller = CasadiNonlinearHelix
+Controller = TrackingNoDamping
 
 ## Plotting
 

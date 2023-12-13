@@ -5,12 +5,12 @@ from parameters import *
 
 class TrackingNoDamping(BlimpController):
 
-    def __init__(self, dT):
+    def __init__(self, dT, skip_derivatives=True):
         super().__init__(dT)
                 
         # Time
-        TRACKING_TIME = 100
-        SETTLE_TIME = 20
+        TRACKING_TIME = 20
+        SETTLE_TIME = 100
 
         tracking_time = np.arange(0, TRACKING_TIME, dT)
         settle_time = np.arange(TRACKING_TIME, TRACKING_TIME + SETTLE_TIME + 1, dT)
@@ -18,7 +18,7 @@ class TrackingNoDamping(BlimpController):
         time_vec = np.concatenate((tracking_time, settle_time))
 
         # Trajectory definition
-        f = 0.01
+        f = 0.05
         self.At = 1
 
         x0 = self.At
@@ -39,12 +39,12 @@ class TrackingNoDamping(BlimpController):
 
         self.traj_x = np.concatenate((self.At * np.cos(2*np.pi*f*tracking_time), self.At*np.ones(len(settle_time))))
         self.traj_y = np.concatenate((self.At * np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-        self.traj_z = np.concatenate((tracking_time * -1/100, -TRACKING_TIME * 1/100 * np.ones(len(settle_time))))
+        self.traj_z = np.concatenate((tracking_time * -1/10, -TRACKING_TIME * 1/10 * np.ones(len(settle_time))))
         self.traj_psi = np.concatenate((psi0 + 2*np.pi*f*tracking_time, (psi0 + 2*np.pi) * np.ones(len(settle_time))))
 
         self.traj_x_dot = np.concatenate((-2*np.pi*f*self.At*np.sin(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
         self.traj_y_dot = np.concatenate((2*np.pi*f*self.At*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))
-        self.traj_z_dot = np.concatenate((-1/100 * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
+        self.traj_z_dot = np.concatenate((-1/10 * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
         self.traj_psi_dot = np.concatenate((2*np.pi*f * np.ones(len(tracking_time)), np.zeros(len(settle_time))))
 
         self.traj_x_ddot = np.concatenate((-(2*np.pi*f)**2*self.At*np.cos(2*np.pi*f*tracking_time), np.zeros(len(settle_time))))

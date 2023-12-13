@@ -52,8 +52,24 @@ class CasadiNonlinearHelix(BlimpController):
         self.target_phi = np.zeros(self.traj_x.shape)
         self.target_theta = np.zeros(self.traj_x.shape)
 
-        self.P = np.eye(6)
-        self.Q = np.eye(6)
+        self.P = np.array([
+            [1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 1000, 0, 0],
+            [0, 0, 0, 0, 1000, 0],
+            [0, 0, 0, 0, 0, 1]
+        ])
+
+        self.Q = np.array([
+            [1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 1000, 0, 0],
+            [0, 0, 0, 0, 1000, 0],
+            [0, 0, 0, 0, 0, 1]
+        ])
+
         self.R = np.eye(4)
     
     def init_sim(self, sim):
