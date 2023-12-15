@@ -9,9 +9,9 @@ The entry points into the code are as follows
 ### blimp_sim.py
 `blimp_sim.py` is used to run a simulation. Invoking `blimp_sim.py` is done as follows:
 
-`python blimp_sim.py log_file.csv \[start_file.csv\]`
+`python blimp_sim.py log_file.csv [start_file.csv]`
 
-`log_file`.csv is the file to which data should be logged. Logs are stored in `logs/\[log_file.csv\]`. I often copy/pasted logs into the `logs_excel` folder to do Excel/MATLAB analysis of them without touching the raw data.
+`log_file`.csv is the file to which data should be logged. Logs are stored in `logs/[log_file.csv]`. I often copy/pasted logs into the `logs_excel` folder to do Excel/MATLAB analysis of them without touching the raw data.
 `start_file.csv` is an optional argument specifying the file name of a previously logged set of data. The simulation will start from the last recorded state/timestep in this file.
 
 Once the simulation is running, it can be stopped with Ctrl-C or by closing the display window if plotting is enabled. The data up to the current point will be logged to the log file.
