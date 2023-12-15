@@ -39,7 +39,7 @@ PLOT_WAVEFORMS = False
 WINDOW_TITLE = 'Linear'
 
 Simulator = NonlinearBlimpSim
-Controller = TrackingHelixTrajGen
+Controller = CasadiNonlinearHelix
 
 ## SIMULATION
 

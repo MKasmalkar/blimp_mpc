@@ -14,6 +14,7 @@ from WaypointTrackingMPC import WaypointTrackingMPC
 from TestController import TestController
 from MPCHelix import MPCHelix
 from CasadiNonlinearHelix import CasadiNonlinearHelix
+from CasadiHelix import CasadiHelix
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -31,7 +32,7 @@ TITLE = "Plots"
 # the simulation data from the file.
 
 Simulator = NonlinearBlimpSim
-Controller = TrackingHelixTrajGen
+Controller = CasadiNonlinearHelix
 
 ## Plotting
 
@@ -41,7 +42,7 @@ if len(sys.argv) < 2:
 
 dT = 0.05  # will be overridden by data load anyways
 sim = Simulator(dT)
-ctrl = Controller(dT, skip_derivatives=True)
+ctrl = Controller(dT)
 plotter = BlimpPlotter()
 
 sim.load_data(sys.argv[1])

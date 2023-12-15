@@ -73,7 +73,7 @@ class CasadiHelix(BlimpController):
         self.Q = np.identity(self.num_outputs)
         self.R = np.identity(self.num_inputs)
         
-        self.N = 20 
+        self.N = 80 
         
         xmin = np.matrix([[-np.inf],
                         [-np.inf],
