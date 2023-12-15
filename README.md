@@ -59,7 +59,7 @@ Before the main loop:
 * Create an initialize the controller object
 * If a `start_file` is specified, load data from this file into the simulator and controller objects
 
-At each time step:
+At each time step in the main loop:
 * Compute the control action using the controller object
 * Update the simulator with the computed control action
 * Update the plotter (may do nothing if plotting is disabled)
