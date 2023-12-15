@@ -18,6 +18,15 @@ Once the simulation is running, it can be stopped with Ctrl-C or by closing the 
 
 Note that this script will overwrite whatever used to be in `log_file.csv` and that even if you Ctrl-C to stop it, it will still overwrite that file with whatever data has been generated up to that point.
 
+The following data will be logged for each simulation time step:
+* Simulation time
+* x, y, z, phi, theta, psi, vx, vy, vz, wx, wy, wz
+* Derivatives of the above variables
+* x, y, z, and psi error
+* Solve time
+
+Additionally, the simulation time delta and the final timestep of the simulation are logged as metadata in the "metadata" column.
+
 ### blimp_data.py
 `blimp_data.py` is used to view simulation results from a logged file. It is invoked as follows:
 
@@ -40,6 +49,25 @@ Within `blimp_sim.py`, the simulation settings can be configured in the `## PARA
 * `Simulator` is used to select which simulator class is used for the simulation (see more below). This is used, for example, to select between a CT linear, CT nonlinear, or discrete-time simulation.
 * `Controller` is used to select the controller class to be used for the simulation (see more below). This is used to select the desired control law; for instance, the tracking controller, an MPC, etc.
 
+The simulation flow is as follows:
+
+Before the main loop:
+* Select the simulator (done by user)
+* Select the controller (done by user)
+* Create and initialize the simulator object
+* Create an initialize the plotter object (`BlimpPlotter`)
+* Create an initialize the controller object
+* If a `start_file` is specified, load data from this file into the simulator and controller objects
+
+At each time step:
+* Compute the control action using the controller object
+* Update the simulator with the computed control action
+* Update the plotter (may do nothing if plotting is disabled)
+
+In the event of a keyboard interrupt or if the plotting window was closed:
+* Create a logger object (`BlimpLogger`)
+* Log the data from the simulation
+
 ## Simulator classes
 
 Simulator objects define the nature of the simulation dynamics. The superclass `BlimpSim` in `BlimpSim.py` defines a number of methods and parameters common to all simulators, but it also defines the `update_model(u)` method, which is the main function of each simulator. Subclasses of `BlimpSim` override the `update_model(u)` and implement their respective model dynamics there. It accepts a control input vector, `u`, which is the control input to be applied to the plant. Subclasses are responsible for then calling the `update_history()` method, which updates the time step and all logged data with the new model state.
@@ -48,6 +76,8 @@ The following simulator classes have been created:
 * `NonlinearBlimpSim`
 * `LinearBlimpSim`
 * `DiscreteBlimpSim`
+
+Each simulator class implements the forward Euler method for numerical integration.
 
 ## Controller classes
 
