@@ -83,7 +83,7 @@ class TrackingNoDamping(BlimpController):
         y_dot = sim.get_var_dot('y')
         z_dot = sim.get_var_dot('z')
 
-        phi_dot = sim.get_var_dot('psi')
+        phi_dot = sim.get_var_dot('phi')
         theta_dot = sim.get_var_dot('theta')
         psi_dot = sim.get_var_dot('psi')
 

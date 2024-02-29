@@ -17,6 +17,9 @@ from MPCHelix import MPCHelix
 from MPCNonlinearHelix import MPCNonlinearHelix
 from CasadiHelix import CasadiHelix
 from CasadiNonlinearHelix import CasadiNonlinearHelix
+from TrackingRPYZ import TrackingRPYZ
+from FeedbackLinAngular import FeedbackLinAngular
+from SwingReducingCtrl import SwingReducingCtrl
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -31,15 +34,16 @@ if len(sys.argv) < 2:
 
 ## PARAMETERS
 
-dT = 0.05 
-STOP_TIME = 120
+dT = 0.05
+STOP_TIME = 250
 PLOT_ANYTHING = False
 PLOT_WAVEFORMS = False
+PAUSE_AT_EACH_ITERATION = False
 
 WINDOW_TITLE = 'Linear'
 
 Simulator = NonlinearBlimpSim
-Controller = CasadiNonlinearHelix
+Controller = SwingReducingCtrl
 
 ## SIMULATION
 
@@ -64,6 +68,9 @@ try:
         sim.update_model(u)
         plotter.update_plot(sim, ctrl)
         
+        if PAUSE_AT_EACH_ITERATION:
+            input()
+
         if plotter.window_was_closed():
             break
 

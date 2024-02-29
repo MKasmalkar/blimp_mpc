@@ -15,6 +15,8 @@ from TestController import TestController
 from MPCHelix import MPCHelix
 from CasadiNonlinearHelix import CasadiNonlinearHelix
 from CasadiHelix import CasadiHelix
+from TrackingRPYZ import TrackingRPYZ
+from SwingReducingCtrl import SwingReducingCtrl
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -32,7 +34,7 @@ TITLE = "Plots"
 # the simulation data from the file.
 
 Simulator = NonlinearBlimpSim
-Controller = CasadiNonlinearHelix
+Controller = SwingReducingCtrl
 
 ## Plotting
 
