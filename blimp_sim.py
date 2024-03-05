@@ -20,6 +20,8 @@ from CasadiNonlinearHelix import CasadiNonlinearHelix
 from TrackingRPYZ import TrackingRPYZ
 from FeedbackLinAngular import FeedbackLinAngular
 from SwingReducingCtrl import SwingReducingCtrl
+from WaypointTrackingFdbkLin import WaypointTrackingFdbkLin
+from WaypointTrackingMPC import WaypointTrackingMPC
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -35,15 +37,15 @@ if len(sys.argv) < 2:
 ## PARAMETERS
 
 dT = 0.05
-STOP_TIME = 250
+STOP_TIME = 300
 PLOT_ANYTHING = False
 PLOT_WAVEFORMS = False
 PAUSE_AT_EACH_ITERATION = False
 
-WINDOW_TITLE = 'Linear'
+WINDOW_TITLE = 'Nonlinear'
 
 Simulator = NonlinearBlimpSim
-Controller = SwingReducingCtrl
+Controller = WaypointTrackingMPC
 
 ## SIMULATION
 

@@ -17,6 +17,7 @@ from CasadiNonlinearHelix import CasadiNonlinearHelix
 from CasadiHelix import CasadiHelix
 from TrackingRPYZ import TrackingRPYZ
 from SwingReducingCtrl import SwingReducingCtrl
+from WaypointTrackingFdbkLin import WaypointTrackingFdbkLin
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -34,7 +35,7 @@ TITLE = "Plots"
 # the simulation data from the file.
 
 Simulator = NonlinearBlimpSim
-Controller = SwingReducingCtrl
+Controller = WaypointTrackingMPC
 
 ## Plotting
 
