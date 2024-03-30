@@ -22,11 +22,14 @@ from FeedbackLinAngular import FeedbackLinAngular
 from SwingReducingCtrl import SwingReducingCtrl
 from WaypointTrackingFdbkLin import WaypointTrackingFdbkLin
 from WaypointTrackingMPC import WaypointTrackingMPC
+from WaypointMPCNonlinear import WaypointMPCNonlinear
+from ParameterIDCtrl import ParameterIDCtrl
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
 
 import numpy as np
+import pandas as pd
 import sys
 import time
 
@@ -36,16 +39,16 @@ if len(sys.argv) < 2:
 
 ## PARAMETERS
 
-dT = 0.05
-STOP_TIME = 300
+dT = 0.01
+STOP_TIME = 3
 PLOT_ANYTHING = False
 PLOT_WAVEFORMS = False
 PAUSE_AT_EACH_ITERATION = False
 
 WINDOW_TITLE = 'Nonlinear'
 
-Simulator = NonlinearBlimpSim
-Controller = WaypointTrackingMPC
+Simulator = LinearBlimpSim
+Controller = ParameterIDCtrl
 
 ## SIMULATION
 
@@ -75,6 +78,10 @@ try:
 
         if plotter.window_was_closed():
             break
+    
+    # pd.options.display.float_format = '{:.3f}'.format
+    # print(pd.DataFrame(sim.get_A_lin()))
+    # print(pd.DataFrame(sim.get_B_lin()))
 
 except KeyboardInterrupt:
     print("Done!")

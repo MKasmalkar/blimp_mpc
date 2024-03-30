@@ -11,8 +11,8 @@ class BlimpLogger:
             writer = csv.writer(outfile)
        
             writer.writerow(['time',
-                             'x', 'y', 'z', 'phi', 'theta', 'psi', 'vx', 'vy', 'vz', 'wx', 'wy', 'wz',
-                             'xdot', 'ydot', 'zdot', 'phidot', 'thetadot', 'psidot', 'vxdot', 'vydot', 'vzdot', 'wxdot', 'wydot', 'wzdot',
+                             'vx', 'vy', 'vz', 'wx', 'wy', 'wz', 'x', 'y', 'z', 'phi', 'theta', 'psi',
+                             'vxdot', 'vydot', 'vzdot', 'wxdot', 'wydot', 'wzdot', 'xdot', 'ydot', 'zdot', 'phidot', 'thetadot', 'psidot',
                              'fx', 'fy', 'fz', 'tauz',
                              'x_error', 'y_error', 'z_error', 'psi_error',
                              'solve_time',
