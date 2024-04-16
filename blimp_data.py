@@ -1,24 +1,6 @@
-from BlimpSim import BlimpSim
-from LinearBlimpSim import LinearBlimpSim
 from NonlinearBlimpSim import NonlinearBlimpSim
-from DiscreteBlimpSim import DiscreteBlimpSim
 
-from BlimpController import BlimpController
-from OriginLQRController import OriginLQRController
-from TrackingRepeatedReducedOrder import TrackingRepeatedReducedOrder
-from TrackingLine import TrackingLine
-from TrackingLineTrajGen import TrackingLineTrajGen
-from TrackingHelixTrajGen import TrackingHelixTrajGen
-from TrackingNoDamping import TrackingNoDamping
-from WaypointTrackingMPC import WaypointTrackingMPC
-from TestController import TestController
-from MPCHelix import MPCHelix
-from CasadiNonlinearHelix import CasadiNonlinearHelix
-from CasadiHelix import CasadiHelix
-from TrackingRPYZ import TrackingRPYZ
-from SwingReducingCtrl import SwingReducingCtrl
-from WaypointTrackingFdbkLin import WaypointTrackingFdbkLin
-from WaypointMPCNonlinear import WaypointMPCNonlinear
+from CBF import CBF
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -36,7 +18,10 @@ TITLE = "Plots"
 # the simulation data from the file.
 
 Simulator = NonlinearBlimpSim
-Controller = WaypointTrackingFdbkLin
+Controller = CBF
+
+PLOT_ANYTHING = True
+PLOT_WAVEFORMS = False
 
 ## Plotting
 
@@ -51,7 +36,10 @@ plotter = BlimpPlotter()
 
 sim.load_data(sys.argv[1])
 ctrl.load_data(sys.argv[1])
-plotter.init_plot(TITLE, True)
+
+plotter.init_plot(TITLE,
+                  waveforms=PLOT_WAVEFORMS,
+                  disable_plotting=(not PLOT_ANYTHING))
 
 plotter.update_plot(sim, ctrl)
 plotter.block()

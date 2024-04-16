@@ -56,12 +56,12 @@ class BlimpSim():
 
         self.B_lin = self.blimp.B
         
-        B_int = np.zeros((12,12))
-        for i in range(10000):
-            dTau = dT / 10000
-            tau = i * dTau
-            B_int += scipy.linalg.expm(self.A_lin * tau) * dTau
-        self.B_dis = B_int @ self.B_lin #np.linalg.inv(A) @ (A_dis - np.eye(12)) @ B
+        # B_int = np.zeros((12,12))
+        # for i in range(1000):
+        #     dTau = dT / 1000
+        #     tau = i * dTau
+        #     B_int += scipy.linalg.expm(self.A_lin * tau) * dTau
+        # self.B_dis = B_int @ self.B_lin #np.linalg.inv(A) @ (A_dis - np.eye(12)) @ B
     
     def update_model(self, u):
         pass

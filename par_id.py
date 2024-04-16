@@ -36,8 +36,45 @@ with open("logs/" + filename, mode='r') as file:
 
     m = gp.Model(env=env)
 
+    # Dvxy = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    # Dvz  = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    
+    # mAxy = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    # mAz  = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    
+    # mRB  = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+
+    # Dwxy = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    # Dwz  = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    
+    # IAxy = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    # IAz  = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+
+    # IRBxy = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    # IRBz = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+
+    # g_acc = 9.8
+    # fg = mRB * g_acc
+
+    # r_zgb = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY)
+    
     A = m.addMVar(shape=(12,12), lb=-GRB.INFINITY, ub=GRB.INFINITY, name='A')
     
+    # A = np.array([
+    #     [-Dvxy / (mAxy + mRB), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, -Dvxy / (mAxy + mRB), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, -Dvz / (mAz + mRB), 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, -Dwxy / (mRB*r_zgb**2 + IAxy + IRBxy), 0, 0, 0, 0, 0, -fg*r_zgb / (mRB*r_zgb**2 + IAxy + IRBxy), 0, 0],
+    #     [0, 0, 0, 0, -Dwxy / (mRB*r_zgb**2 + IAxy + IRBxy), 0, 0, 0, 0, 0, -fg*r_zgb/(mRB*r_zgb**2 + IAxy + IRBxy), 0],
+    #     [0, 0, 0, 0, 0, -Dwz / (IAz + IRBz), 0, 0, 0, 0, 0, 0],
+    #     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+    # ])
+
     B = np.array([[ 2.16684724,  0.,          0.,          0.,        ],
                   [ 0.,          2.16684724,  0.,          0.,        ],
                   [ 0.,          0.,          1.33351113,  0.,        ],
@@ -73,5 +110,5 @@ with open("logs/" + filename, mode='r') as file:
     A_sol = A.X
 
     pd.options.display.float_format = '{:.3f}'.format
-    #print(pd.DataFrame(A_sol))
-    print(repr(A_sol))
+    print(pd.DataFrame(A_sol))
+    # print(repr(A_sol))

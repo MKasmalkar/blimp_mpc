@@ -4,7 +4,7 @@ import numpy as np
 class ParameterIDCtrl(BlimpController):
 
     def get_ctrl_action(self, sim):
-        return np.array([0.05, 0, 0, 0])
+        return np.array([0.0, 0.0, 0.05, 0.0])
     
     def get_error(self, sim):
         n = sim.get_current_timestep() + 1

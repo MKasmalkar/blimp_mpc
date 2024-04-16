@@ -2,28 +2,7 @@ from NonlinearBlimpSim import NonlinearBlimpSim
 from LinearBlimpSim import LinearBlimpSim
 from DiscreteBlimpSim import DiscreteBlimpSim
 
-from TrackingRepeatedReducedOrder import TrackingRepeatedReducedOrder
-from TrackingOneshotReducedOrder import TrackingOneshotReducedOrder
-from TrackingOneshotFullOrder import TrackingOneshotFullOrder
-from TrackingRepeatedFullOrder import TrackingRepeatedFullOrder
-from TrackingOneshotDecoupledAttDyn import TrackingOneshotDecoupledAttDyn
-from TrackingRepeatedReducedOrderLogging import TrackingRepeatedReducedOrderLogging
-from TrackingLineTrajGen import TrackingLineTrajGen
-from TrackingLine import TrackingLine
-from TrackingNoDamping import TrackingNoDamping
-from TrackingHelixTrajGen import TrackingHelixTrajGen
-from AttitudeStabilization import AttitudeStabilization
-from MPCHelix import MPCHelix
-from MPCNonlinearHelix import MPCNonlinearHelix
-from CasadiHelix import CasadiHelix
-from CasadiNonlinearHelix import CasadiNonlinearHelix
-from TrackingRPYZ import TrackingRPYZ
-from FeedbackLinAngular import FeedbackLinAngular
-from SwingReducingCtrl import SwingReducingCtrl
-from WaypointTrackingFdbkLin import WaypointTrackingFdbkLin
-from WaypointTrackingMPC import WaypointTrackingMPC
-from WaypointMPCNonlinear import WaypointMPCNonlinear
-from ParameterIDCtrl import ParameterIDCtrl
+from CBF import CBF
 
 from BlimpPlotter import BlimpPlotter
 from BlimpLogger import BlimpLogger
@@ -39,19 +18,20 @@ if len(sys.argv) < 2:
 
 ## PARAMETERS
 
-dT = 0.01
-STOP_TIME = 3
+dT = 0.05
+STOP_TIME = 100
+
 PLOT_ANYTHING = False
 PLOT_WAVEFORMS = False
+
 PAUSE_AT_EACH_ITERATION = False
 
 WINDOW_TITLE = 'Nonlinear'
 
-Simulator = LinearBlimpSim
-Controller = ParameterIDCtrl
+Simulator = NonlinearBlimpSim
+Controller = CBF
 
 ## SIMULATION
-
 sim = Simulator(dT)
 
 plotter = BlimpPlotter()
